@@ -1,7 +1,16 @@
-# Perth Turf Management v2.0 — Complete System
+# Perth Turf Management v2.1 — Complete System
 
 Professional lawn care tracking with GDD calculation, spray forecasting, multi-area support, and automated task reminders.
 
+---
+# NEW IN v2.1:
+# ✓ Notification Toggle Switches (enable/disable specific alerts)
+# ✓ Corrected agronomic application rate ranges and units (kg vs ml)
+# ✓ Multi-area support (up to 5 configurable areas)
+# ✓ Lawn type selector (affects GDD calculation)
+# ✓ Spray conditions forecast (wind + rain analysis)
+# ✓ Generic entity configuration (3 YAML anchors)
+# ✓ 2024.4+ Weather Forecast Compatibility built-in
 ---
 
 ## 🆕 What's New in v2.0
