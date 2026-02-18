@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <radialGradient id="bgGlow" cx="30%" cy="60%" r="75%">
+      <stop offset="0%"   stop-color="#1a3324"/>
+      <stop offset="45%"  stop-color="#0f1f16"/>
+      <stop offset="100%" stop-color="#070e09"/>
+    </radialGradient>
+    <radialGradient id="bloom1" cx="85%" cy="15%" r="40%">
+      <stop offset="0%"   stop-color="#2a5c38" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#070e09" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bloom2" cx="10%" cy="90%" r="45%">
+      <stop offset="0%"   stop-color="#0d3320" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#070e09" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="bloom3" cx="55%" cy="40%" r="30%">
+      <stop offset="0%"   stop-color="#183d26" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#070e09" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grassBlur"><feGaussianBlur stdDeviation="1.2"/></filter>
+    <filter id="grassBlurFar"><feGaussianBlur stdDeviation="2.5"/></filter>
+    <filter id="grassBlurNear"><feGaussianBlur stdDeviation="0.4"/></filter>
+    <linearGradient id="topVig" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#060d08" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#060d08" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bottomVig" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#060d08" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#060d08" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="leftVig" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#060d08" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#060d08" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rightVig" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#060d08" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#060d08" stop-opacity="0.6"/>
+    </linearGradient>
+    <clipPath id="bounds"><rect width="1920" height="1080"/></clipPath>
+    <filter id="noise" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noiseOut"/>
+      <feColorMatrix type="saturate" values="0" in="noiseOut" result="grayNoise"/>
+      <feBlend in="SourceGraphic" in2="grayNoise" mode="overlay" result="blended"/>
+      <feComposite in="blended" in2="SourceGraphic" operator="in"/>
+    </filter>
+  </defs>
+
+  <!-- Base -->
+  <rect width="1920" height="1080" fill="url(#bgGlow)"/>
+  <rect width="1920" height="1080" fill="url(#bloom1)"/>
+  <rect width="1920" height="1080" fill="url(#bloom2)"/>
+  <rect width="1920" height="1080" fill="url(#bloom3)"/>
+
+  <!-- Hex grid -->
+  <g opacity="0.04" clip-path="url(#bounds)">
+    <pattern id="hexP" x="0" y="0" width="60" height="52" patternUnits="userSpaceOnUse">
+      <polygon points="30,2 58,17 58,47 30,62 2,47 2,17" fill="none" stroke="#4aa35b" stroke-width="0.6"/>
+    </pattern>
+    <rect width="1920" height="1080" fill="url(#hexP)"/>
+  </g>
+
+  <!-- Scanlines -->
+  <g opacity="0.025" clip-path="url(#bounds)">
+    <pattern id="scan" x="0" y="0" width="1" height="4" patternUnits="userSpaceOnUse">
+      <rect width="1920" height="1" y="0" fill="#a8e6b3"/>
+    </pattern>
+    <rect width="1920" height="1080" fill="url(#scan)"/>
+  </g>
+
+  <!-- Far grass -->
+  <g clip-path="url(#bounds)" filter="url(#grassBlurFar)" opacity="0.18">
+    <path d="M-20,1080 Q10,820 25,650 Q30,680 20,1080Z" fill="#1e4a2c"/>
+    <path d="M15,1080 Q40,780 60,580 Q68,600 45,1080Z" fill="#1a4028"/>
+    <path d="M50,1080 Q65,850 80,700 Q90,720 72,1080Z" fill="#1e4a2c"/>
+    <path d="M80,1080 Q110,760 140,540 Q150,570 125,1080Z" fill="#163520"/>
+    <path d="M130,1080 Q160,820 185,620 Q195,650 170,1080Z" fill="#1a4028"/>
+    <path d="M1750,1080 Q1780,800 1800,600 Q1810,630 1785,1080Z" fill="#1e4a2c"/>
+    <path d="M1790,1080 Q1820,850 1840,680 Q1852,700 1825,1080Z" fill="#1a4028"/>
+    <path d="M1840,1080 Q1870,780 1900,560 Q1912,590 1888,1080Z" fill="#163520"/>
+    <path d="M1880,1080 Q1905,820 1925,640 Q1935,665 1912,1080Z" fill="#1e4a2c"/>
+    <path d="M380,1080 Q400,900 415,750 Q425,770 408,1080Z" fill="#163520"/>
+    <path d="M420,1080 Q445,870 465,700 Q476,720 458,1080Z" fill="#1a4028"/>
+    <path d="M1440,1080 Q1460,880 1478,720 Q1488,745 1468,1080Z" fill="#163520"/>
+    <path d="M1475,1080 Q1498,850 1518,670 Q1530,695 1510,1080Z" fill="#1e4a2c"/>
+  </g>
+
+  <!-- Mid grass -->
+  <g clip-path="url(#bounds)" filter="url(#grassBlur)" opacity="0.32">
+    <path d="M0,1080 Q-5,940 15,780 Q25,800 10,1080Z" fill="#2a6638"/>
+    <path d="M20,1080 Q18,900 38,720 Q50,745 32,1080Z" fill="#235a30"/>
+    <path d="M45,1080 Q42,870 65,680 Q78,705 58,1080Z" fill="#2a6638"/>
+    <path d="M72,1080 Q78,910 95,750 Q108,775 88,1080Z" fill="#1f5229"/>
+    <path d="M98,1080 Q100,880 120,700 Q132,728 112,1080Z" fill="#2a6638"/>
+    <path d="M125,1080 Q132,920 148,760 Q160,785 142,1080Z" fill="#235a30"/>
+    <path d="M152,1080 Q155,895 172,730 Q184,755 165,1080Z" fill="#2a6638"/>
+    <path d="M178,1080 Q188,925 202,765 Q215,790 196,1080Z" fill="#1f5229"/>
+    <path d="M205,1080 Q210,900 228,735 Q240,758 222,1080Z" fill="#2a6638"/>
+    <path d="M232,1080 Q240,930 255,775 Q268,800 248,1080Z" fill="#235a30"/>
+    <path d="M1680,1080 Q1685,905 1700,745 Q1712,770 1694,1080Z" fill="#2a6638"/>
+    <path d="M1706,1080 Q1715,925 1730,762 Q1743,788 1724,1080Z" fill="#235a30"/>
+    <path d="M1734,1080 Q1742,895 1760,728 Q1772,753 1752,1080Z" fill="#2a6638"/>
+    <path d="M1762,1080 Q1772,918 1788,755 Q1800,780 1780,1080Z" fill="#1f5229"/>
+    <path d="M1790,1080 Q1800,900 1818,735 Q1830,760 1810,1080Z" fill="#2a6638"/>
+    <path d="M1818,1080 Q1828,925 1845,762 Q1858,788 1838,1080Z" fill="#235a30"/>
+    <path d="M1848,1080 Q1855,895 1875,730 Q1888,756 1866,1080Z" fill="#2a6638"/>
+    <path d="M1878,1080 Q1888,915 1905,752 Q1918,778 1898,1080Z" fill="#1f5229"/>
+    <path d="M1905,1080 Q1915,900 1935,738 Q1948,763 1928,1080Z" fill="#2a6638"/>
+    <path d="M340,1080 Q348,920 362,775 Q374,800 356,1080Z" fill="#235a30"/>
+    <path d="M368,1080 Q375,908 392,762 Q404,788 385,1080Z" fill="#2a6638"/>
+    <path d="M1520,1080 Q1528,915 1545,768 Q1557,793 1538,1080Z" fill="#235a30"/>
+    <path d="M1548,1080 Q1558,930 1572,780 Q1584,806 1565,1080Z" fill="#2a6638"/>
+  </g>
+
+  <!-- Foreground grass -->
+  <g clip-path="url(#bounds)" filter="url(#grassBlurNear)" opacity="0.55">
+    <path d="M-10,1080 Q5,870 22,680 Q38,700 15,1080Z" fill="#3d8c52"/>
+    <path d="M18,1080 Q30,845 50,640 Q66,665 42,1080Z" fill="#338c48"/>
+    <path d="M48,1080 Q58,855 78,655 Q95,682 70,1080Z" fill="#3d8c52"/>
+    <path d="M78,1080 Q92,878 110,672 Q128,700 102,1080Z" fill="#2e7a42"/>
+    <path d="M108,1080 Q118,862 140,658 Q158,686 132,1080Z" fill="#3d8c52"/>
+    <path d="M158,1080 Q170,875 190,672 Q208,700 182,1080Z" fill="#338c48"/>
+    <path d="M188,1080 Q202,888 220,685 Q238,712 212,1080Z" fill="#3d8c52"/>
+    <path d="M218,1080 Q228,860 250,655 Q268,682 242,1080Z" fill="#2e7a42"/>
+    <path d="M1672,1080 Q1682,872 1702,668 Q1720,695 1694,1080Z" fill="#3d8c52"/>
+    <path d="M1702,1080 Q1715,888 1732,682 Q1750,710 1724,1080Z" fill="#338c48"/>
+    <path d="M1732,1080 Q1748,875 1765,670 Q1783,698 1757,1080Z" fill="#3d8c52"/>
+    <path d="M1762,1080 Q1775,862 1795,658 Q1813,686 1787,1080Z" fill="#2e7a42"/>
+    <path d="M1792,1080 Q1808,878 1825,672 Q1843,700 1817,1080Z" fill="#3d8c52"/>
+    <path d="M1822,1080 Q1835,858 1855,652 Q1873,680 1847,1080Z" fill="#338c48"/>
+    <path d="M1852,1080 Q1868,875 1885,668 Q1903,695 1877,1080Z" fill="#3d8c52"/>
+    <path d="M1882,1080 Q1895,862 1915,655 Q1933,682 1907,1080Z" fill="#2e7a42"/>
+    <path d="M1912,1080 Q1928,878 1945,672 Q1963,700 1937,1080Z" fill="#3d8c52"/>
+    <path d="M680,1080 Q688,940 698,820 Q708,840 692,1080Z" fill="#2e7a42" opacity="0.5"/>
+    <path d="M1240,1080 Q1248,935 1260,812 Q1270,835 1254,1080Z" fill="#338c48" opacity="0.5"/>
+  </g>
+
+  <!-- Dew drops -->
+  <g clip-path="url(#bounds)" opacity="0.4">
+    <circle cx="85"   cy="920" r="2.5" fill="#a8e6b3" opacity="0.6"/>
+    <circle cx="142"  cy="870" r="1.8" fill="#c8f0d4" opacity="0.5"/>
+    <circle cx="55"   cy="960" r="2"   fill="#a8e6b3" opacity="0.4"/>
+    <circle cx="195"  cy="910" r="1.5" fill="#c8f0d4" opacity="0.6"/>
+    <circle cx="228"  cy="950" r="2.2" fill="#a8e6b3" opacity="0.5"/>
+    <circle cx="1720" cy="905" r="2.5" fill="#a8e6b3" opacity="0.6"/>
+    <circle cx="1775" cy="855" r="1.8" fill="#c8f0d4" opacity="0.5"/>
+    <circle cx="1748" cy="945" r="2"   fill="#a8e6b3" opacity="0.4"/>
+    <circle cx="1840" cy="915" r="1.5" fill="#c8f0d4" opacity="0.6"/>
+    <circle cx="1882" cy="958" r="2.2" fill="#a8e6b3" opacity="0.5"/>
+  </g>
+
+  <!-- Vignettes -->
+  <rect width="1920" height="280" fill="url(#topVig)"/>
+  <rect y="800" width="1920" height="280" fill="url(#bottomVig)"/>
+  <rect width="300" height="1080" fill="url(#leftVig)"/>
+  <rect x="1620" width="300" height="1080" fill="url(#rightVig)"/>
+
+  <!-- Grain -->
+  <rect width="1920" height="1080" fill="transparent" filter="url(#noise)" opacity="0.06"/>
+
+</svg>
