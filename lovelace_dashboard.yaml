@@ -1,9 +1,30 @@
+# =============================================================================
+# Perth Turf Management v2.3 — Lovelace Dashboard
+# =============================================================================
+
 title: Turf Management v2
 views:
   - title: Dashboard
     path: lawn
     icon: mdi:grass
     badges: []
+    type: masonry
+    theme: Mushroom
+    background:
+      opacity: 100
+      alignment: center
+      size: cover
+      repeat: no-repeat
+      attachment: fixed
+      image:
+        media_content_id: /local/turf_bg.svg
+        media_content_type: ''
+        metadata:
+          navigateIds:
+            - {}
+            - media_content_type: ''
+              media_content_id: __MANUAL_ENTRY__
+
     card_mod:
       style:
         .: |
@@ -21,14 +42,11 @@ views:
             --slider-color: #4aa35b;
             --switch-checked-color: #4aa35b;
           }
-          hui-view {
-            background-image: url('/local/turf_bg.svg') !important;
-            background-size: cover !important;
-            background-position: center bottom !important;
-            background-attachment: fixed !important;
-            background-repeat: no-repeat !important;
-          }
+
     cards:
+      # ==========================================================================
+      # SECTION 1 — Lawn Configuration
+      # ==========================================================================
       - type: vertical-stack
         cards:
           - type: markdown
@@ -36,21 +54,11 @@ views:
               ## ⚙️ Lawn Configuration
             card_mod:
               style: |
-                ha-card {
-                  background: transparent;
-                  box-shadow: none;
-                  border: none;
-                }
-                h2 {
-                  font-size: 13px !important;
-                  font-weight: 700 !important;
-                  text-transform: uppercase;
-                  letter-spacing: 0.14em !important;
-                  color: #4aa35b !important;
-                  margin: 0 0 12px 0 !important;
-                  border-bottom: 1px solid rgba(74,163,91,0.2);
-                  padding-bottom: 8px;
-                }
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase;
+                     letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
+                     border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+
           - type: horizontal-stack
             cards:
               - type: custom:mushroom-select-card
@@ -58,59 +66,51 @@ views:
                 icon: mdi:grass
                 card_mod:
                   style: |
-                    ha-card {
-                      background: #1c2b22 !important;
-                      border: 1px solid rgba(74,163,91,0.18) !important;
-                      border-radius: 14px !important;
-                      box-shadow: none !important;
-                    }
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important;
+                              border-radius: 14px !important; box-shadow: none !important; }
+
               - type: custom:mushroom-template-card
                 primary: Total Lawn Area
-                secondary: '{{ states(''sensor.lawn_total_area'') }}m²'
+                secondary: "{{ states('sensor.lawn_total_area') }}m²"
                 icon: mdi:texture-box
                 icon_color: green
                 tap_action:
                   action: none
                 card_mod:
-                  style: >
-                    ha-card {
-                      background: #1c2b22 !important;
-                      border: 1px solid rgba(74,163,91,0.18) !important;
-                      border-radius: 14px !important;
-                      box-shadow: none !important;
-                    }
-
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important;
+                              border-radius: 14px !important; box-shadow: none !important; }
                     .primary { color: #e8f5eb !important; }
+                    .secondary { color: #8fb89a !important; font-family: monospace !important; }
 
-                    .secondary { color: #8fb89a !important; font-family:
-                    monospace !important; }
+      # ==========================================================================
+      # SECTION 2 — Microclimate & GDD
+      # ==========================================================================
       - type: vertical-stack
         cards:
           - type: markdown
             content: |
               ## 🌡️ Microclimate & GDD Tracking
             card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase;
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase;
                      letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
                      border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+
           - type: custom:mini-graph-card
             entities:
               - entity: sensor.weatherflow_sensors_temperature
                 name: Current
-                color: '#4aa35b'
+                color: "#4aa35b"
               - entity: sensor.lawn_daily_max_temp
                 name: Max
                 show_state: true
-                color: '#e07843'
+                color: "#e07843"
               - entity: sensor.lawn_daily_min_temp
                 name: Min
                 show_state: true
-                color: '#4da6d4'
+                color: "#4da6d4"
             name: Temperature — 48hr
             hours_to_show: 48
             line_width: 2.5
@@ -122,485 +122,393 @@ views:
               legend: true
             card_mod:
               style: |
-                ha-card {
-                  background: #1c2b22 !important;
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important;
+                          border-radius: 16px !important; box-shadow: none !important; }
+
+          - type: custom:mushroom-template-card
+            primary: "PGR Accumulated Progress"
+            secondary: "{{ states('input_number.pgr_gdd_accumulated') | round(0) }} / {{ states('input_number.pgr_gdd_target') | round(0) }} GDD (+{{ states('sensor.lawn_gdd_today') }} Today)"
+            icon: mdi:chart-timeline-variant
+            icon_color: >
+              {% set acc = states('input_number.pgr_gdd_accumulated') | float(0) %}
+              {% set tgt = states('input_number.pgr_gdd_target') | float(1) %}
+              {% if acc >= tgt %} red
+              {% elif acc >= (tgt * 0.8) %} orange
+              {% else %} green
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: input_number.pgr_gdd_accumulated
+            card_mod:
+              style: |
+                ha-card { 
+                  background: linear-gradient(to right, rgba(74,163,91,0.3) {{ (states('input_number.pgr_gdd_accumulated')|float(0) / states('input_number.pgr_gdd_target')|float(1) * 100) | round(0) }}%, #1c2b22 {{ (states('input_number.pgr_gdd_accumulated')|float(0) / states('input_number.pgr_gdd_target')|float(1) * 100) | round(0) }}%) !important;
                   border: 1px solid rgba(74,163,91,0.18) !important;
-                  border-radius: 16px !important;
-                  box-shadow: none !important;
+                  border-radius: 14px !important; 
+                  box-shadow: none !important; 
                 }
-          - type: horizontal-stack
-            cards:
-              - type: custom:mushroom-template-card
-                primary: Today's GDD
-                secondary: '{{ states(''sensor.lawn_gdd_today'') }} GDD'
-                icon: mdi:thermometer-lines
-                icon_color: orange
-                tap_action:
-                  action: more-info
-                  entity: sensor.lawn_gdd_today
-                card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important; }
-                    .primary { color: #e8f5eb !important; }
+                .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                .secondary { color: #8fb89a !important; font-family: monospace !important; }
 
-                    .secondary { color: #8fb89a !important; font-family:
-                    monospace !important; }
-              - type: custom:mushroom-template-card
-                primary: Accumulated
-                secondary: >-
-                  {{ states('input_number.pgr_gdd_accumulated') | round(0) }} /
-                  {{ states('input_number.pgr_gdd_target') | round(0) }}
-                icon: mdi:chart-line
-                icon_color: >
-                  {% if states('input_number.pgr_gdd_accumulated') | float >=
-                  states('input_number.pgr_gdd_target') | float %}
-                    red
-                  {% elif states('input_number.pgr_gdd_accumulated') | float >=
-                  (states('input_number.pgr_gdd_target') | float * 0.8) %}
-                    orange
-                  {% else %}
-                    green
-                  {% endif %}
-                tap_action:
-                  action: more-info
-                  entity: input_number.pgr_gdd_accumulated
-                card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important; }
-                    .primary { color: #e8f5eb !important; }
-
-                    .secondary { color: #8fb89a !important; font-family:
-                    monospace !important; }
+      # ==========================================================================
+      # SECTION 3 — Spray Conditions & PGR Forecast
+      # ==========================================================================
       - type: vertical-stack
         cards:
           - type: markdown
             content: |
               ## 🌤️ Spray Conditions & PGR Forecast
             card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase;
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase;
                      letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
                      border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+
           - type: horizontal-stack
             cards:
               - type: custom:mushroom-template-card
                 primary: Spray Conditions
                 secondary: >
-                  {{ states('sensor.lawn_spray_conditions') }} Wind: {{
-                  states('sensor.lawn_wind_speed_forecast') }}km/h Rain: {{
-                  states('sensor.lawn_rain_forecast') }}mm
+                  {{ states('sensor.lawn_spray_conditions') }}
+                  Wind: {{ states('sensor.lawn_wind_speed_forecast') }}km/h
+                  Rain: {{ states('sensor.lawn_rain_forecast') }}mm
                 icon: >
-                  {% set cond = states('sensor.lawn_spray_conditions') %} {% if
-                  cond == 'Good' %}mdi:check-circle {% elif cond == 'Marginal'
-                  %}mdi:alert-circle {% else %}mdi:close-circle{% endif %}
+                  {% set cond = states('sensor.lawn_spray_conditions') %}
+                  {% if cond == 'Good' %}mdi:check-circle
+                  {% elif cond == 'Marginal' %}mdi:alert-circle
+                  {% else %}mdi:close-circle{% endif %}
                 icon_color: >
-                  {% set cond = states('sensor.lawn_spray_conditions') %} {% if
-                  cond == 'Good' %}green {% elif cond == 'Marginal' %}orange {%
-                  else %}red{% endif %}
+                  {% set cond = states('sensor.lawn_spray_conditions') %}
+                  {% if cond == 'Good' %}green
+                  {% elif cond == 'Marginal' %}orange
+                  {% else %}red{% endif %}
                 tap_action:
                   action: more-info
                   entity: sensor.lawn_spray_conditions
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important;
                               border-radius: 14px !important; box-shadow: none !important; }
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #8fb89a !important; font-size: 11px !important; line-height: 1.4 !important; }
 
-                    .secondary { color: #8fb89a !important; font-size: 11px
-                    !important; line-height: 1.4 !important; }
               - type: custom:mushroom-template-card
                 primary: PGR Forecast
                 secondary: >
-                  Estimated: {{ states('sensor.lawn_pgr_forecast_date') }} (~{{
-                  states('sensor.lawn_pgr_days_until') }} days) 5-day GDD: {{
-                  states('sensor.lawn_gdd_projection_5day') }}
+                  Target: {{ states('sensor.lawn_pgr_forecast_date') }}
+                  (~{{ states('sensor.lawn_pgr_days_until') }} days)
+                  5-day GDD: {{ states('sensor.lawn_gdd_projection_5day') }}
                 icon: mdi:calendar-star
                 icon_color: purple
                 tap_action:
                   action: more-info
                   entity: sensor.lawn_pgr_forecast_date
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important;
                               border-radius: 14px !important; box-shadow: none !important; }
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #8fb89a !important; font-size: 11px !important; line-height: 1.4 !important; }
 
-                    .secondary { color: #8fb89a !important; font-size: 11px
-                    !important; line-height: 1.4 !important; }
+          - type: markdown
+            content: >
+              <table width="100%" style="border-collapse: collapse; font-size: 13px;">
+                <tr style="color: #6fcf80; text-align: left; border-bottom: 1px solid rgba(74,163,91,0.25);">
+                  <th style="padding: 8px 0;">Date</th>
+                  <th style="text-align: center;">Wind</th>
+                  <th style="text-align: center;">Rain</th>
+                  <th style="text-align: center;">Spray</th>
+                  <th style="text-align: right;">Est. GDD</th>
+                </tr>
+                {%- set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') -%}
+                {%- if forecast -%}
+                  {%- set base_temp = 5 if 'Cool Season' in states('input_select.lawn_type') else 10 -%}
+                  {%- for day in forecast[:5] -%}
+                    {%- set wind = day.wind_speed | default(0) | float | round(0) -%}
+                    {%- set rain = day.precipitation | default(0) | float | round(1) -%}
+                    {%- set max_t = day.temperature | default(0) | float -%}
+                    {%- set min_t = day.templow | default(max_t) | float -%}
+                    {%- set gdd = [(((max_t + min_t) / 2) - base_temp), 0] | max | round(1) -%}
+                    
+                    {%- if wind > 25 or rain > 5 -%}
+                      {%- set spray_icon = '🔴 Poor' -%}
+                    {%- elif wind > 15 or rain > 2 -%}
+                      {%- set spray_icon = '🟠 Marg' -%}
+                    {%- else -%}
+                      {%- set spray_icon = '🟢 Good' -%}
+                    {%- endif %}
+                <tr style="border-bottom: 1px solid rgba(74,163,91,0.1); color: #e8f5eb;">
+                  <td style="padding: 8px 0;">{{ as_timestamp(day.datetime) | timestamp_custom('%a, %d %b') }}</td>
+                  <td style="text-align: center; color: #8fb89a;">{{ wind }} km/h</td>
+                  <td style="text-align: center; color: #8fb89a;">{{ rain }} mm</td>
+                  <td style="text-align: center;">{{ spray_icon }}</td>
+                  <td style="text-align: right; font-family: monospace; font-size: 13px; color: #6fcf80;">+{{ gdd }}</td>
+                </tr>
+                  {%- endfor -%}
+                {%- else -%}
+                <tr><td colspan="5" style="padding: 10px; text-align: center; color: #8fb89a;">Forecast data unavailable. Please verify your weather integration.</td></tr>
+                {%- endif -%}
+              </table>
+            card_mod:
+              style: |
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important;
+                          border-radius: 14px !important; box-shadow: none !important; padding: 4px 12px; }
+
+      # ==========================================================================
+      # SECTION 4 — Task Logging
+      # ==========================================================================
       - type: vertical-stack
         cards:
           - type: markdown
             content: |
               ## ✅ Log Maintenance Tasks
             card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase;
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase;
                      letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
                      border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+
           - type: entities
             show_header_toggle: false
             entities:
               - entity: input_text.lawn_task_notes
-                name: 📝 Task Notes
+                name: "📝 Task Notes"
             card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important;
+              style: |
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important;
                           border-radius: 14px !important; box-shadow: none !important; }
                 .card-content { padding: 8px 16px !important; }
-
                 hui-generic-entity-row { color: #8fb89a !important; }
+
           - type: grid
             columns: 3
             square: false
             cards:
               - type: custom:mushroom-template-card
                 primary: Mowing
-                secondary: >-
-                  {{ as_timestamp(states('input_datetime.lawn_last_mowing')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_mowing')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:mower-on
                 icon_color: green
                 tap_action:
                   action: call-service
                   service: script.lawn_log_mowing
-                  confirmation:
-                    text: Log mowing now?
+                  confirmation: { text: "Log mowing now?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_mowing
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Kelp
-                secondary: >-
-                  {{ as_timestamp(states('input_datetime.lawn_last_kelp')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_kelp')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:seed
                 icon_color: teal
                 tap_action:
                   action: call-service
                   service: script.lawn_log_kelp
-                  confirmation:
-                    text: Log kelp application?
+                  confirmation: { text: "Log kelp application?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_kelp
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: PGR
-                secondary: >-
-                  {{ as_timestamp(states('input_datetime.lawn_last_pgr')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_pgr')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:expansion-card-variant
                 icon_color: purple
                 tap_action:
                   action: call-service
                   service: script.lawn_log_pgr
-                  confirmation:
-                    text: Log PGR? (Resets GDD to 0)
+                  confirmation: { text: "Log PGR? (Resets GDD to 0)" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_pgr
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Granular Fert
-                secondary: >-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_granular_fert'))
-                  | timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_granular_fert')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:shaker-outline
                 icon_color: brown
                 tap_action:
                   action: call-service
                   service: script.lawn_log_granular_fert
-                  confirmation:
-                    text: Log granular fertiliser?
+                  confirmation: { text: "Log granular fertiliser?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_granular_fert
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Liquid Fert
-                secondary: >-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_liquid_fert')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_liquid_fert')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:water-circle
                 icon_color: blue
                 tap_action:
                   action: call-service
                   service: script.lawn_log_liquid_fert
-                  confirmation:
-                    text: Log liquid fertiliser?
+                  confirmation: { text: "Log liquid fertiliser?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_liquid_fert
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Humate
-                secondary: >-
-                  {{ as_timestamp(states('input_datetime.lawn_last_humate')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_humate')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:cup-water
                 icon_color: deep-orange
                 tap_action:
                   action: call-service
                   service: script.lawn_log_humate
-                  confirmation:
-                    text: Log humate?
+                  confirmation: { text: "Log humate?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_humate
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Soil Wetter
-                secondary: >-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_soil_wetter')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_soil_wetter')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:water-percent
                 icon_color: cyan
                 tap_action:
                   action: call-service
                   service: script.lawn_log_soil_wetter
-                  confirmation:
-                    text: Log soil wetter?
+                  confirmation: { text: "Log soil wetter?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_soil_wetter
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Pre-emergent
-                secondary: >-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_preemergent')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_preemergent')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:shield-bug
                 icon_color: amber
                 tap_action:
                   action: call-service
                   service: script.lawn_log_preemergent
-                  confirmation:
-                    text: Log pre-emergent?
+                  confirmation: { text: "Log pre-emergent?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_preemergent
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Insecticide
-                secondary: >-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_insecticide')) |
-                  timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_insecticide')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:bug-outline
                 icon_color: red
                 tap_action:
                   action: call-service
                   service: script.lawn_log_insecticide
-                  confirmation:
-                    text: Log insecticide?
+                  confirmation: { text: "Log insecticide?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_insecticide
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Fungicide
-                secondary: >-
-                  {{ as_timestamp(states('input_datetime.lawn_last_fungicide'))
-                  | timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_fungicide')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:mushroom-outline
                 icon_color: pink
                 tap_action:
                   action: call-service
                   service: script.lawn_log_fungicide
-                  confirmation:
-                    text: Log fungicide?
+                  confirmation: { text: "Log fungicide?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_fungicide
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
               - type: custom:mushroom-template-card
                 primary: Herbicide
-                secondary: >-
-                  {{ as_timestamp(states('input_datetime.lawn_last_herbicide'))
-                  | timestamp_custom('%d-%b-%y') }}
+                secondary: "{{ as_timestamp(states('input_datetime.lawn_last_herbicide')) | timestamp_custom('%d-%b-%y') }}"
                 icon: mdi:sprout-outline
                 icon_color: lime
                 tap_action:
                   action: call-service
                   service: script.lawn_log_herbicide
-                  confirmation:
-                    text: Log herbicide?
+                  confirmation: { text: "Log herbicide?" }
                 hold_action:
                   action: more-info
                   entity: input_datetime.lawn_last_herbicide
                 card_mod:
-                  style: >
-                    ha-card { background: #1c2b22 !important; border: 1px solid
-                    rgba(74,163,91,0.18) !important;
-                              border-radius: 14px !important; box-shadow: none !important;
-                              transition: border-color 0.2s, transform 0.15s !important; }
-                    ha-card:hover { border-color: rgba(111,207,128,0.45)
-                    !important; transform: translateY(-2px) !important; }
+                  style: |
+                    ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; transition: border-color 0.2s, transform 0.15s !important; }
+                    ha-card:hover { border-color: rgba(111,207,128,0.45) !important; transform: translateY(-2px) !important; }
+                    .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                    .secondary { color: #4d7058 !important; font-family: monospace !important; font-size: 11px !important; }
 
-                    .primary { color: #e8f5eb !important; font-weight: 600
-                    !important; }
-
-                    .secondary { color: #4d7058 !important; font-family:
-                    monospace !important; font-size: 11px !important; }
+  # ==========================================================================
+  # SETTINGS VIEW — Configuration & Rates
+  # ==========================================================================
+  - title: Settings
+    path: settings
+    icon: mdi:cog
+    badges: []
     type: masonry
     theme: Mushroom
     background:
-      opacity: 33
+      opacity: 100
       alignment: center
       size: cover
-      repeat: repeat
+      repeat: no-repeat
       attachment: fixed
       image:
         media_content_id: /local/turf_bg.svg
@@ -610,10 +518,7 @@ views:
             - {}
             - media_content_type: ''
               media_content_id: __MANUAL_ENTRY__
-  - title: Settings
-    path: settings
-    icon: mdi:cog
-    badges: []
+
     card_mod:
       style:
         .: |
@@ -626,12 +531,7 @@ views:
             --primary-color: #4aa35b;
             --accent-color: #6fcf80;
           }
-          hui-view {
-            background-image: url('/local/turf_bg.svg') !important;
-            background-size: cover !important;
-            background-position: center bottom !important;
-            background-attachment: fixed !important;
-          }
+
     cards:
       - type: vertical-stack
         cards:
@@ -640,13 +540,10 @@ views:
               ## 📐 Lawn Areas
               Set unused areas to 0m² to hide them
             card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase; color: #4aa35b !important; margin: 0 0 8px 0 !important; }
 
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase;
-                     color: #4aa35b !important; margin: 0 0 8px 0 !important; }
           - type: entities
             title: Area Configuration
             show_header_toggle: false
@@ -662,27 +559,62 @@ views:
               - entity: input_text.lawn_area_5_name
               - entity: input_number.lawn_area_5_size
             card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important;
-                          border-radius: 14px !important; box-shadow: none !important; }
-                .card-header { color: #6fcf80 !important; font-weight: 700
-                !important; }
-
+              style: |
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; }
+                .card-header { color: #6fcf80 !important; font-weight: 700 !important; }
                 hui-generic-entity-row { color: #e8f5eb !important; }
+
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🔔 Notification Settings
+              Enable or disable task reminders
+            card_mod:
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase; color: #4aa35b !important; margin: 0 0 8px 0 !important; }
+
+          - type: entities
+            show_header_toggle: true
+            entities:
+              - entity: input_boolean.lawn_notify_mowing
+                name: Mowing Reminders
+              - entity: input_boolean.lawn_notify_kelp
+                name: Kelp Reminders
+              - entity: input_boolean.lawn_notify_granular_fert
+                name: Granular Fert Reminders
+              - entity: input_boolean.lawn_notify_liquid_fert
+                name: Liquid Fert Reminders
+              - entity: input_boolean.lawn_notify_humate
+                name: Humate Reminders
+              - entity: input_boolean.lawn_notify_soil_wetter
+                name: Soil Wetter Reminders
+              - entity: input_boolean.lawn_notify_preemergent
+                name: Pre-emergent Reminders
+              - entity: input_boolean.lawn_notify_insecticide
+                name: Insecticide Reminders
+              - entity: input_boolean.lawn_notify_fungicide
+                name: Fungicide Reminders
+              - entity: input_boolean.lawn_notify_herbicide
+                name: Herbicide Reminders
+              - entity: input_boolean.lawn_notify_pgr
+                name: PGR Reminders
+            card_mod:
+              style: |
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; }
+                hui-generic-entity-row { color: #e8f5eb !important; }
+
       - type: vertical-stack
         cards:
           - type: markdown
             content: |
               ## 💧 Application Rates (per 100m²)
             card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase; color: #4aa35b !important; margin: 0 0 8px 0 !important; }
 
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase;
-                     color: #4aa35b !important; margin: 0 0 8px 0 !important; }
           - type: entities
             show_header_toggle: false
             entities:
@@ -697,24 +629,20 @@ views:
               - entity: input_number.lawn_rate_herbicide
               - entity: input_number.lawn_rate_pgr
             card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important;
-                          border-radius: 14px !important; box-shadow: none !important; }
+              style: |
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; }
                 hui-generic-entity-row { color: #e8f5eb !important; }
+
       - type: vertical-stack
         cards:
           - type: markdown
             content: |
               ## ⏱️ Task Intervals (Days)
             card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase; color: #4aa35b !important; margin: 0 0 8px 0 !important; }
 
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase;
-                     color: #4aa35b !important; margin: 0 0 8px 0 !important; }
           - type: entities
             show_header_toggle: false
             entities:
@@ -729,32 +657,26 @@ views:
               - entity: input_number.lawn_interval_fungicide
               - entity: input_number.lawn_interval_herbicide
             card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important;
-                          border-radius: 14px !important; box-shadow: none !important; }
+              style: |
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; }
                 hui-generic-entity-row { color: #e8f5eb !important; }
+
       - type: vertical-stack
         cards:
           - type: markdown
             content: |
               ## 🌱 GDD / PGR Settings
             card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
+              style: |
+                ha-card { background: transparent; box-shadow: none; border: none; }
+                h2 { font-size: 13px !important; font-weight: 700 !important; text-transform: uppercase; color: #4aa35b !important; margin: 0 0 8px 0 !important; }
 
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase;
-                     color: #4aa35b !important; margin: 0 0 8px 0 !important; }
           - type: entities
             show_header_toggle: false
             entities:
               - entity: input_number.pgr_gdd_target
               - entity: input_number.pgr_gdd_accumulated
             card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important;
-                          border-radius: 14px !important; box-shadow: none !important; }
+              style: |
+                ha-card { background: #1c2b22 !important; border: 1px solid rgba(74,163,91,0.18) !important; border-radius: 14px !important; box-shadow: none !important; }
                 hui-generic-entity-row { color: #e8f5eb !important; }
