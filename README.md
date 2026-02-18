@@ -13,7 +13,7 @@ Professional lawn care tracking with GDD calculation, spray forecasting, multi-a
 # ✓ 2024.4+ Weather Forecast Compatibility built-in
 ---
 
-## 🆕 What's New in v2.0
+## 🆕 v2.0
 
 ### Multi-Area Lawn Management
 - Configure up to 5 lawn areas with custom names
