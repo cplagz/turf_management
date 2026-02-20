@@ -1,419 +1,487 @@
-# Perth Turf Management v2.1 — Complete System
+# 🌱 Perth Turf Management System for Home Assistant
 
-Professional lawn care tracking with GDD calculation, spray forecasting, multi-area support, and automated task reminders.
+> **Comprehensive lawn care automation for warm-season turf on Perth's sandy soils.**
+> GDD-driven PGR scheduling, inventory tracking, ET₀ irrigation estimates, spray condition forecasting, and a dark-themed Mushroom dashboard — all in a single HA package file.
 
----
-# NEW IN v2.1:
-# ✓ Notification Toggle Switches (enable/disable specific alerts)
-# ✓ Corrected agronomic application rate ranges and units (kg vs ml)
-# ✓ Multi-area support (up to 5 configurable areas)
-# ✓ Lawn type selector (affects GDD calculation)
-# ✓ Spray conditions forecast (wind + rain analysis)
-# ✓ Generic entity configuration (3 YAML anchors)
-# ✓ 2024.4+ Weather Forecast Compatibility built-in
----
+![HA Badge](https://img.shields.io/badge/Home%20Assistant-2024.8%2B-blue?logo=homeassistant)
+![Version](https://img.shields.io/badge/version-3.0.1-green)
+![License](https://img.shields.io/badge/license-MIT-brightgreen)
+![Maintenance](https://img.shields.io/badge/maintained-yes-success)
 
-## 🆕 v2.0
-
-### Multi-Area Lawn Management
-- Configure up to 5 lawn areas with custom names
-- Set unused areas to 0m² to hide them automatically
-- All calculations show per-area mixing amounts
-- New sensor: `sensor.lawn_total_area`
-
-### Spray Conditions Forecast
-- Real-time wind speed analysis (next 24hr)
-- Rain forecast integration (next 24hr)
-- Automated suitability rating: Good/Marginal/Poor
-- Next suitable spray window detection (7-day forecast)
-- Shows in dashboard and included in spray task notifications
-
-### PGR Application Forecasting
-- 5-day GDD projection from weather forecast
-- Estimated PGR application date
-- Days remaining until target GDD reached
-- Updates automatically based on temperature forecast
-
-### Lawn Type Selector
-- 5 grass types: Cool Season (C3), Warm Season (C4), Bermuda, Kikuyu, Buffalo
-- Automatically adjusts GDD base temperature
-- Cool Season = 5°C base, all others = 10°C base
-
-### Enhanced UI/UX
-- Number input fields (not sliders) for precise values
-- Dedicated settings view with organized configuration
-- Spray conditions card showing wind/rain at a glance
-- PGR forecast card with estimated application date
-- Lawn type selector prominently displayed
-
-### Generic Configuration
-- 3 YAML anchors: temperature sensor, notification service, weather forecast
-- Edit 3 lines in `lawn_care.yaml` to configure
-- Auto-populates 30+ entity references
-- Distribution-ready for any Home Assistant setup
+**[Jump to Installation Guide →](#-installation)**
 
 ---
 
-## Core Features (From v1.0)
+## What's New in v3.0
 
-✅ GDD tracking engine (temperature-based)  
-✅ 11 maintenance task logging with mixing calculations  
-✅ Automated task interval reminders  
-✅ Mobile app notifications  
-✅ Dark botanical theme  
-✅ Complete logbook integration  
+### New Features
 
----
+- **📦 Inventory Tracking** — Stock levels for all 10 products auto-deducted when you tap a log button. Configurable low-stock threshold alerts via push notification. Dashboard card shows at-a-glance stock status.
 
-## Quick Start
+- **💧 ET₀ Irrigation Estimates** — Simplified Hargreaves evapotranspiration model calibrated for Perth's latitude (~31.9°S). Calculates net water demand after subtracting forecast rain and outputs a suggested watering runtime in minutes based on your sprinkler precipitation rate.
 
-### Prerequisites
+- **🌡️ Soil Moisture Integration** — Supports any number of Zigbee/Ecowitt/BLE soil probes. Averages readings across zones. When soil moisture is above your configured threshold, irrigation notifications and watering reminders are automatically suppressed.
 
-- **Home Assistant** 2024.1+
-- **Temperature sensor** (outdoor, °C)
-- **Weather integration** (for spray/PGR forecasts)
-- **Mobile app** (optional for notifications)
-- **HACS custom cards:**
-  - Mushroom Cards
-  - Mini Graph Card
-  - card-mod
+- **🧪 Nitrogen Tracking** — Cumulative seasonal nitrogen counter (kg N) auto-increments when you log granular or liquid fertiliser. Configurable N-fraction per product (e.g., `0.20` for a 20-4-11). One-tap seasonal reset script included.
 
-### Installation (10 minutes)
+- **📊 Season Review Dashboard** — New third view with 12-month temperature statistics (built-in `statistics-graph`), a dual-axis Nitrogen vs Temperature chart (ApexCharts), 90-day daily GDD bar chart, and a season summary card.
 
-**1. Configure the Package**
+- **🔔 Irrigation & Low Stock Notifications** — Two new toggleable notification automations: daily irrigation suggestions at 5:00 AM (suppressed when soil is wet) and low-stock alerts when any product drops below threshold.
 
-Edit `lawn_care.yaml` lines 24-26:
+### Improved from v2.x
 
-```yaml
-package.lawn_temp_sensor: &temp_sensor sensor.YOUR_TEMP_SENSOR
-package.lawn_notify_service: &notify_service notify.YOUR_NOTIFY
-package.lawn_weather: &weather_forecast weather.YOUR_WEATHER
-```
+- **`service:` → `action:`** — All 50+ action calls migrated to the HA 2024.8+ `action:` key. No more deprecation log warnings.
 
-Examples:
-```yaml
-package.lawn_temp_sensor: &temp_sensor sensor.outdoor_temperature
-package.lawn_notify_service: &notify_service notify.mobile_app_johns_phone
-package.lawn_weather: &weather_forecast weather.home
-```
+- **`call-service` → `perform-action`** — All 11 dashboard tap actions migrated. Clean on HA 2025.x.
 
-**2. Install Package**
+- **Jinja2 Whitespace Fix** — Every multi-line Jinja2 template block (76 total) now uses YAML literal scalar (`|`) instead of folded scalar (`>`). Preserves newlines in logbook messages, notification text, and sensor state computations. Eliminates subtle evaluation bugs from collapsed whitespace.
 
-Enable packages in `configuration.yaml`:
-```yaml
-homeassistant:
-  packages: !include_dir_named packages
-```
+- **GDD Race Condition Eliminated** — The separate `lawn_gdd_accumulate` (00:00:00) and `lawn_temp_reset_daily` (00:00:30) automations are merged into a single `lawn_daily_gdd_cycle` that runs at 23:59 with ordered actions. No more risk of accumulating a zeroed GDD value on HA restart at midnight.
 
-Copy `lawn_care.yaml` to `config/packages/lawn_care.yaml`
+- **Robust Temperature Guards** — The max/min tracking automations now explicitly reject `unavailable` and `unknown` states before writing. Prevents a sensor dropout from recording `0°C` as your daily extreme.
 
-**3. Install Background**
+- **PGR Days-Until Stability** — Now uses the 5-day forecast projection average instead of today's (often-zero overnight) GDD as the divisor. No more `unavailable` state at 1:00 AM.
 
-Copy `turf_bg.svg` to `config/www/turf_bg.svg`
+- **Spray Conditions Icon Fix** — The icon template no longer self-references its own state on first evaluation. Uses the same wind/rain variables inline.
 
-**4. Restart Home Assistant**
+- **Mobile-Friendly Task Grid** — Reduced from 3 columns to 2 columns so cards remain readable on phone screens. `:hover` CSS replaced with `:active` for proper touch feedback.
 
-**5. Install Dashboard**
+- **Inline Table Styles** — The 5-day forecast table uses pure inline `style=""` attributes. The `<style>` tag approach was stripped by HA's markdown card sanitiser.
 
-- Settings → Dashboards → Add Dashboard
-- Edit → Raw Config Editor
-- Paste entire `lovelace_dashboard.yaml`
-- Update line ~95 with your temperature sensor
-- Save
-
-**6. Configure Your Lawn**
-
-Go to dashboard Settings tab:
-- Set lawn type (affects GDD base temperature)
-- Configure area names and sizes
-- Set application rates per 100m²
-- Set task intervals in days
-- Set GDD target for PGR
-
-**7. Initialize Temperature Tracking**
-
-Developer Tools → Services:
-```yaml
-service: input_number.set_value
-target:
-  entity_id: input_number.lawn_temp_daily_max
-data:
-  value: 32  # Today's actual high
-```
-
-```yaml
-service: input_number.set_value
-target:
-  entity_id: input_number.lawn_temp_daily_min
-data:
-  value: 18  # Today's actual low
-```
+- **Database Bloat Reduction** — Wrapper template sensors for daily max/min temp removed (redundant with the `input_number` entities). `device_class` and `state_class` applied directly via `customize:`. Recorder exclude snippet provided for ephemeral entities.
 
 ---
 
-## New Sensors (v2.0)
+## Feature Overview
 
-### Spray Conditions
-- `sensor.lawn_wind_speed_forecast` - Next 24hr max wind (km/h)
-- `sensor.lawn_rain_forecast` - Next 24hr rain total (mm)
-- `sensor.lawn_spray_conditions` - Good/Marginal/Poor rating
-- `sensor.lawn_next_spray_window` - Next suitable spray date
-
-**Logic:**
-- **Good:** Wind <15 km/h AND Rain <2mm
-- **Marginal:** Wind 15-25 km/h OR Rain 2-5mm
-- **Poor:** Wind >25 km/h OR Rain >5mm
-
-### PGR Forecast
-- `sensor.lawn_gdd_projection_5day` - Projected GDD next 5 days
-- `sensor.lawn_pgr_forecast_date` - Estimated application date
-- `sensor.lawn_pgr_days_until` - Days until target reached
-
-### Multi-Area
-- `sensor.lawn_total_area` - Sum of all active areas (m²)
-
-### Lawn Type
-- `input_select.lawn_type` - Grass type selector (affects GDD)
-
----
-
-## Configuration Guide
-
-### Lawn Areas
-
-Configure up to 5 areas in Settings tab:
-
-**Area 1-5 Name:**
-- Examples: "Front Yard", "Back Yard", "Side Strip", "Pool Area", "North Section"
-
-**Area 1-5 Size:**
-- Enter size in m²
-- Set to 0 to hide unused areas
-- Total shown in dashboard
-
-**Example Setup:**
-```
-Area 1: "Front Lawn" = 120m²
-Area 2: "Back Lawn" = 85m²
-Area 3: "Side Yard" = 25m²
-Area 4: 0m² (disabled)
-Area 5: 0m² (disabled)
-Total: 230m²
-```
-
-### Lawn Type Selection
-
-**Cool Season (C3)** - Base temp 5°C
-- Examples: Ryegrass, Fescue, Bluegrass
-- Used in cooler climates
-
-**Warm Season (C4)** - Base temp 10°C  
-- Examples: Couch, Kikuyu, Buffalo, Bermuda
-- Used in Perth and warm climates
-
-**Bermuda** - Base temp 10°C
-- Specific variety of warm-season grass
-
-**Kikuyu** - Base temp 10°C
-- Perth favorite, aggressive grower
-
-**Buffalo** - Base temp 10°C
-- Shade-tolerant warm-season grass
-
-### Application Rates (per 100m²)
-
-**Perth Sandy Soil Recommendations:**
-
-| Product | Rate | Notes |
-|---------|------|-------|
-| Granular Fert | 150-200g | Slow-release NPK |
-| Liquid Fert | 50-150ml | Bi-weekly |
-| Kelp | 30-50ml | Biostimulant |
-| Humate | 30-50ml | Soil conditioner |
-| Soil Wetter | 20-50ml | **Critical for Perth** |
-| Pre-emergent | 100-200ml | Seasonal |
-| Insecticide | 30-50ml | As needed |
-| Fungicide | 30-50ml | Disease control |
-| Herbicide | 50-100ml | Spot treatment |
-| PGR | 10-25ml | Growth regulator |
-
-**Always check your product labels.**
-
-### Task Intervals
-
-**Perth Climate Guide:**
-
-| Task | Summer | Winter |
-|------|--------|--------|
-| Mowing | 5-7 days | 10-14 days |
-| Kelp | 14 days | 21 days |
-| Liquid Fert | 14 days | 21-30 days |
-| Granular Fert | 60 days | 90 days |
-| Humate | 30 days | 60 days |
-| Soil Wetter | 90 days | 120 days |
-| Pre-emergent | 120 days | Seasonal |
-| PGR | Use GDD | Use GDD |
-
-### GDD / PGR Settings
-
-**Target GDD:** 200-250 for most warm-season grasses
-- Check product label for specific recommendations
-- Lower values = more frequent applications
-- Higher values = longer intervals between applications
-
-**Base Temperature:** Set automatically by lawn type
-- Cool Season = 5°C
-- Warm Season = 10°C
+| Feature | What It Does |
+|---|---|
+| **GDD Tracking** | Automatic Growing Degree Day accumulation. Lawn-type-aware base temperatures: 10°C for C4 (Couch, Kikuyu, Buffalo, Bermuda), 5°C for C3 |
+| **PGR Forecasting** | 5-day predictive GDD projection from weather forecast. Estimates the exact date you'll hit your GDD target |
+| **Spray Conditions** | Evaluates today's wind + rain as Good/Marginal/Poor. 5-day inline forecast table. "Next spray window" sensor scans 7 days |
+| **11 Task Reminders** | Interval-based notifications for: mowing, kelp, granular fert, liquid fert, humate, soil wetter, pre-emergent, insecticide, fungicide, herbicide, PGR — each with an independent on/off toggle |
+| **Inventory Tracking** | Stock levels for 10 products. Auto-deducts on log. Low-stock sensor + push alert |
+| **ET₀ Irrigation** | Hargreaves ET₀ → net demand (minus forecast rain) → suggested sprinkler minutes |
+| **Soil Moisture** | Multi-probe average. Suppresses watering notifications when soil is above threshold |
+| **Nitrogen Tracking** | Cumulative seasonal N counter (kg). Auto-increments on granular/liquid fert logs. Configurable N-fraction per product |
+| **Multi-Area** | 5 configurable lawn zones with names and sizes. Per-area quantity calculations in logbook entries |
+| **Season Review** | 12-month temp trends, N vs temp dual-axis chart, 90-day GDD bar chart, season summary |
+| **Mobile Dashboard** | 2-column responsive task grid, touch-optimised cards, dark Mushroom theme |
 
 ---
 
 ## Entity Reference
 
-### Input Selects
-- `input_select.lawn_type` - Lawn type (affects GDD calculation)
+The package creates the following entities:
 
-### Input Text (Area Names)
-- `input_text.lawn_area_1_name` through `input_text.lawn_area_5_name`
-- `input_text.lawn_task_notes` - Notes field for logging
+| Type | Count | Examples |
+|---|---|---|
+| `input_boolean` | 13 | `lawn_notify_mowing`, `lawn_notify_low_stock`, `lawn_notify_irrigation` |
+| `input_number` | 38 | `lawn_area_1_size`, `lawn_rate_kelp`, `lawn_interval_mowing`, `lawn_stock_kelp`, `pgr_gdd_target`, `lawn_sprinkler_precip_rate`, `lawn_nitrogen_applied_season` |
+| `input_datetime` | 11 | `lawn_last_mowing`, `lawn_last_kelp`, `lawn_last_pgr` |
+| `input_text` | 6 | `lawn_area_1_name` through `lawn_area_5_name`, `lawn_task_notes` |
+| `input_select` | 1 | `lawn_type` (Cool Season C3 / Warm Season C4 / Bermuda / Kikuyu / Buffalo) |
+| Template sensors | 14 | `lawn_gdd_today`, `lawn_spray_conditions`, `lawn_et_estimate`, `lawn_irrigation_minutes`, `lawn_avg_soil_moisture`, `lawn_low_stock_items`, `lawn_pgr_forecast_date` |
+| Scripts | 12 | `lawn_log_mowing` through `lawn_log_pgr`, `lawn_reset_nitrogen_season` |
+| Automations | 16 | `lawn_temp_track_max`, `lawn_daily_gdd_cycle`, `lawn_pgr_gdd_alert`, 11 task reminders, `lawn_low_stock_alert`, `lawn_irrigation_notify` |
 
-### Input Numbers (29 total)
-**Area Sizes:**
-- `input_number.lawn_area_1_size` through `input_number.lawn_area_5_size`
+---
 
-**Rates (10):**
-- `input_number.lawn_rate_*` (granular_fert, liquid_fert, kelp, humate, soil_wetter, preemergent, insecticide, fungicide, herbicide, pgr)
+## Prerequisites
 
-**Intervals (10):**
-- `input_number.lawn_interval_*` (same list as rates)
+### Required
 
-**GDD:**
-- `input_number.pgr_gdd_accumulated`
-- `input_number.pgr_gdd_target`
+- **Home Assistant 2024.8+** (uses `action:` syntax, `weather.get_forecasts`, `perform-action` tap actions)
+- **Weather integration** with daily forecasts — [WeatherFlow](https://www.home-assistant.io/integrations/weatherflow/), [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology), [OpenWeatherMap](https://www.home-assistant.io/integrations/openweathermap/), or similar
+- **Temperature sensor** providing °C (any local or weather-station sensor)
+- **HA Companion App** (iOS or Android) for push notifications
 
-**Temperature:**
-- `input_number.lawn_temp_daily_max`
-- `input_number.lawn_temp_daily_min`
+### Required HACS Frontend
 
-### Template Sensors
-- `sensor.lawn_gdd_today` - Today's GDD (lawn type adjusted)
-- `sensor.lawn_daily_max_temp` - Today's max
-- `sensor.lawn_daily_min_temp` - Today's min
-- `sensor.lawn_total_area` - Sum of all areas
-- `sensor.lawn_wind_speed_forecast` - 24hr wind
-- `sensor.lawn_rain_forecast` - 24hr rain
-- `sensor.lawn_spray_conditions` - Suitability rating
-- `sensor.lawn_next_spray_window` - Next good spray day
-- `sensor.lawn_gdd_projection_5day` - 5-day GDD projection
-- `sensor.lawn_pgr_forecast_date` - Estimated PGR date
-- `sensor.lawn_pgr_days_until` - Days until PGR needed
+Install these via [HACS](https://hacs.xyz/) → Frontend:
 
-### Scripts (11)
-All with multi-area calculation support:
-- `script.lawn_log_*` (mowing, kelp, pgr, granular_fert, liquid_fert, humate, soil_wetter, preemergent, insecticide, fungicide, herbicide)
+| Card | Purpose | Link |
+|---|---|---|
+| **Mushroom Cards** | Core UI card library (template cards, select cards) | [GitHub](https://github.com/piitaya/lovelace-mushroom) |
+| **Mini Graph Card** | 48-hour temperature sparkline | [GitHub](https://github.com/kalkih/mini-graph-card) |
+| **card-mod** | CSS theming (dark green theme, progress bar gradients) | [GitHub](https://github.com/thomasloven/lovelace-card-mod) |
 
-### Automations (15)
-- Temperature tracking (3)
-- GDD accumulation (1)
-- PGR threshold alert (1)
-- Task reminders (11) - all include spray conditions when relevant
+### Optional HACS Frontend
+
+| Card | Purpose | Link |
+|---|---|---|
+| **ApexCharts Card** | Season Review dual-axis charts (View 3) | [GitHub](https://github.com/RomRider/apexcharts-card) |
+| **layout-card** | Auto-collapsing grid columns for advanced responsive layouts | [GitHub](https://github.com/thomasloven/lovelace-layout-card) |
+
+### Optional Hardware
+
+- **Soil moisture probes** — Ecowitt WH51 (via Ecowitt integration or GW1000 gateway), Xiaomi HHCCJCY01 (BLE), or any Zigbee sensor via ZHA/Z2M
+- **Smart irrigation controller** — Rachio, Hydrawise, or generic relay-controlled solenoid valves
+
+---
+
+## 🚀 Installation
+
+### Step 1 — Enable Packages
+
+In your `configuration.yaml`, ensure packages are enabled:
+
+```yaml
+homeassistant:
+  packages: !include_dir_named packages
+```
+
+Create the directory if it doesn't exist:
+
+```bash
+mkdir -p config/packages
+```
+
+### Step 2 — Copy the Package File
+
+Copy `lawn_care.yaml` into `config/packages/`:
+
+```
+config/
+├── configuration.yaml
+├── packages/
+│   └── lawn_care.yaml       ← backend (entities, sensors, scripts, automations)
+└── www/
+    └── turf_bg.svg           ← optional background image
+```
+
+### Step 3 — Configure Your Three Entity IDs
+
+Open `lawn_care.yaml` and update the three YAML anchors near the top of the file:
+
+```yaml
+# ────────────────────────────────────────────────────────────
+# CONFIGURATION ANCHORS — Edit these three lines only
+# ────────────────────────────────────────────────────────────
+package.lawn_temp_sensor: &temp_sensor sensor.YOUR_TEMP_SENSOR
+package.lawn_notify_service: &notify_service notify.mobile_app_YOUR_PHONE
+package.lawn_weather: &weather_forecast weather.YOUR_WEATHER_ENTITY
+```
+
+These anchors handle `entity_id:` and `target:` references automatically. However, **Jinja2 template strings** (`{{ }}`) also contain hardcoded entity IDs that need updating. Search the file for `⚙️ USER-CONFIG` to find all locations — there are approximately 8 places in the automations section where the temperature sensor entity ID appears inside a template string.
+
+| Setting | Default Value | Change To |
+|---|---|---|
+| Temperature sensor | `sensor.weatherflow_sensors_temperature` | Your local temp sensor (must provide °C) |
+| Notify service | `notify.mobile_app_marcs_iphone` | Your mobile app notify service |
+| Weather entity | `weather.weatherflow_forecast_home` | Your weather forecast entity (must support `weather.get_forecasts` with `type: daily`) |
+
+### Step 4 — Add Recorder Excludes (Recommended)
+
+Merge the contents of `recorder_exclude.yaml` into your `configuration.yaml` to prevent database bloat from ephemeral entities:
+
+```yaml
+recorder:
+  exclude:
+    entities:
+      # Daily temp trackers — reset every night, no historical value
+      - input_number.lawn_temp_daily_max
+      - input_number.lawn_temp_daily_min
+      # Forecast sensor — stores full 7-day JSON blob on every hourly update
+      - sensor.lawn_weather_forecast_custom
+```
+
+If you already have a `recorder:` block, merge the `entities:` list into your existing excludes.
+
+### Step 5 — Install the Dashboard
+
+**Option A — YAML Mode Dashboard** (recommended for version control):
+
+Copy `lovelace_dashboard.yaml` to your config directory and add to `configuration.yaml`:
+
+```yaml
+lovelace:
+  mode: yaml
+  dashboards:
+    lovelace-turf:
+      mode: yaml
+      title: Turf Management
+      icon: mdi:grass
+      show_in_sidebar: true
+      filename: lovelace_dashboard.yaml
+```
+
+**Option B — UI Mode Dashboard:**
+
+1. Go to **Settings → Dashboards → Add Dashboard**
+2. Choose **"Start with an empty dashboard"**
+3. Open the dashboard, click the **⋮ menu → Raw configuration editor**
+4. Paste the entire contents of `lovelace_dashboard.yaml`
+5. Click **Save**
+
+### Step 6 — Background Image (Optional)
+
+The dashboard theme references `/local/turf_bg.svg` as a background. Place your SVG at `config/www/turf_bg.svg`. If you don't have one, the dark theme works fine without it — just remove or comment out the `background:` block from each view in the dashboard YAML.
+
+### Step 7 — Restart and Verify
+
+1. **Restart Home Assistant** to load the package
+2. Go to **Developer Tools → States**
+3. Filter for `lawn_` — you should see all entities listed
+4. Verify `sensor.lawn_weather_forecast_custom` has a `forecast` attribute (may take up to 1 hour for the first fetch)
+
+---
+
+## Post-Install Configuration
+
+### Lawn Areas
+
+Navigate to the **Settings** tab (⚙️ icon) in the dashboard:
+
+1. **Name and size** each lawn area in m². Set unused areas to `0` to hide them from logbook calculations
+2. Verify `sensor.lawn_total_area` shows the correct sum
+
+### Application Rates & Intervals
+
+On the same **Settings** tab:
+
+1. Set **application rates** per 100m² for each product (kg for granular, ml for liquids)
+2. Set **task intervals** in days — this controls when reminders fire
+3. Set **GDD target** for PGR (typically 200 GDD for Trinexapac-ethyl on warm-season turf in Perth)
+
+### Inventory Setup
+
+On the **Dashboard** tab, scroll to **📦 Inventory Status**:
+
+1. Enter your current stock level for each product
+2. In **Settings → Irrigation Settings**, configure the **Low Stock Alert Threshold** (default 20% — you'll be alerted when any product drops below this percentage of its max capacity)
+
+Stock auto-deducts every time you tap a log button. The calculation uses your configured rate × total lawn area.
+
+### Nitrogen Tracking
+
+In **Settings → Nitrogen Tracking**:
+
+1. Set **Granular Fert N Content** as a decimal fraction (e.g., `0.20` for a 20-4-11 fertiliser)
+2. Set **Liquid Fert N Content** (e.g., `0.05` for a 5% N liquid feed)
+3. The `lawn_nitrogen_applied_season` counter auto-increments on each granular or liquid fert log
+4. Use the **Reset Seasonal N Counter** button at the end of each season
+
+### Irrigation Settings
+
+In **Settings → Irrigation Settings**:
+
+1. **Sprinkler Precipitation Rate** (mm/hr) — measure this with a catch-cup test, or use the manufacturer's specification. Default: 12 mm/hr
+2. **Soil Moisture Suppress Threshold** (%) — irrigation notifications are silenced when average soil moisture is above this. Default: 20%. Set to 0 to disable suppression.
+
+### Soil Moisture Probes (Optional)
+
+If you have soil probes, edit the `probe_entities` list in the `Lawn Average Soil Moisture` sensor template in `lawn_care.yaml`:
+
+```yaml
+{% set probe_entities = [
+  'sensor.soil_moisture_front',    # ← change to your entity IDs
+  'sensor.soil_moisture_back',     # ← add or remove as needed
+] %}
+```
+
+If no probes are configured (or the entities don't exist), the sensor reports `unavailable` and all moisture conditions gracefully pass through — no features break.
+
+---
+
+## Dashboard Views
+
+### View 1 — Dashboard (`/lawn`)
+
+The main operational view. Sections from top to bottom:
+
+| Section | Contents |
+|---|---|
+| **⚙️ Lawn Configuration** | Lawn type selector, total area readout |
+| **🌡️ Microclimate & GDD** | 48-hour temperature graph (Mini Graph Card), PGR progress bar with dynamic gradient fill |
+| **🌤️ Spray Conditions** | Today's spray assessment, PGR forecast date, 5-day predictive table (wind/rain/spray/GDD) |
+| **💧 Irrigation & Soil** | ET₀ estimate, suggested watering minutes, live soil moisture reading |
+| **✅ Log Tasks** | Task notes field + 2-column grid of 11 tap-to-log buttons (with confirmation dialogs). Hold any button for `more-info` on the last-applied date |
+| **📦 Inventory** | At-a-glance stock alert card + full stock levels list |
+
+### View 2 — Settings (`/settings`)
+
+All configuration inputs grouped into cards:
+
+Lawn Areas · Notification Toggles · Application Rates · Task Intervals · GDD/PGR Settings · Irrigation Settings · Nitrogen Tracking (with seasonal reset button)
+
+### View 3 — Season Review (`/season`)
+
+Long-term analytics (requires **ApexCharts Card** from HACS for charts):
+
+| Card | Description |
+|---|---|
+| **Monthly Temperature Trends** | Built-in `statistics-graph` showing 12 months of mean/min/max ambient temperature |
+| **Nitrogen vs Temperature** | Dual Y-axis ApexCharts area chart: cumulative nitrogen (left) vs weekly average temp (right) over 365 days |
+| **Daily GDD (90 Days)** | Column chart showing daily GDD values to visualise seasonal growth patterns |
+| **Season Summary** | Snapshot card: total N applied, current accumulated GDD, today's ET₀ |
+
+---
+
+## File Structure
+
+```
+perth-turf-management/
+├── lawn_care.yaml            # HA package — all backend entities, sensors, scripts, automations
+├── lovelace_dashboard.yaml   # Lovelace — 3 views (Dashboard, Settings, Season Review)
+├── recorder_exclude.yaml     # Snippet to merge into configuration.yaml
+└── README.md
+```
+
+---
+
+## Upgrading from v2.x
+
+### Breaking Changes
+
+1. **`service:` → `action:`** — All script/automation action calls updated. Your external automations that *call* these scripts (e.g., `script.lawn_log_mowing`) will continue to work — the entity IDs are unchanged.
+
+2. **Wrapper sensors removed** — `sensor.lawn_daily_max_temp` and `sensor.lawn_daily_min_temp` no longer exist. The dashboard and templates now reference `input_number.lawn_temp_daily_max` and `input_number.lawn_temp_daily_min` directly. If you reference the old sensor names in other dashboards or automations, update them.
+
+3. **Midnight automations merged** — The separate `lawn_gdd_accumulate` (00:00:00) and `lawn_temp_reset_daily` (00:00:30) are now a single `lawn_daily_gdd_cycle` at 23:59. After upgrading, go to **Settings → Automations** and **delete the two old automations** if they persist — otherwise you'll accumulate GDD twice.
+
+4. **Dashboard tap actions** — `call-service` → `perform-action` on all 11 log buttons. The old syntax still works but generates deprecation warnings in HA 2025.x.
+
+### New Entities to Initialise
+
+After upgrading, set initial values for these new entities (all default to `0`):
+
+| Entity | What to Set |
+|---|---|
+| `input_number.lawn_stock_kelp` (and all `lawn_stock_*`) | Your current stock levels |
+| `input_number.lawn_sprinkler_precip_rate` | Your sprinkler output in mm/hr (default 12) |
+| `input_number.lawn_moisture_threshold` | Soil moisture % to suppress irrigation (default 0 = disabled) |
+| `input_number.lawn_stock_alert_threshold` | Low stock alert at this % of max capacity (default 0 → set to 20) |
+| `input_number.lawn_granular_fert_n_fraction` | e.g., `0.20` for 20% N product |
+| `input_number.lawn_liquid_fert_n_fraction` | e.g., `0.05` for 5% N product |
+
+---
+
+## Version History
+
+### v3.0.1 — Current
+
+- Fixed forecast table rendering: replaced `<style>` block (stripped by HA markdown sanitiser) with pure inline styles
+- Fixed 76 Jinja2 template blocks using YAML folded scalar (`>`) instead of literal scalar (`|`)
+
+### v3.0.0
+
+- Added inventory tracking with auto-deduct on all 10 product log scripts
+- Added low-stock sensor (`sensor.lawn_low_stock_items`) and push alert automation
+- Added ET₀ irrigation estimate (Hargreaves equation, Perth-calibrated Ra)
+- Added irrigation minutes sensor with configurable sprinkler precipitation rate
+- Added soil moisture probe integration (multi-probe average, watering suppression)
+- Added nitrogen tracking with per-product N-fraction and seasonal reset
+- Added Season Review dashboard view (3 charts + summary card)
+- Added irrigation and low-stock notification toggles
+- Migrated all `service:` → `action:` (50+ occurrences)
+- Migrated all dashboard `call-service` → `perform-action` (11 tap actions)
+- Merged GDD accumulate + temp reset into single 23:59 automation (race condition fix)
+- Added `unavailable`/`unknown` guards to temperature tracking automations
+- Stabilised PGR days-until sensor (uses 5-day projection average)
+- Fixed spray conditions icon self-reference on first evaluation
+- Removed redundant wrapper template sensors (daily max/min temp)
+- Reduced task grid to 2 columns for mobile readability
+- Replaced `:hover` with `:active` CSS for touch device feedback
+- Added `device_class`/`state_class` to input_numbers via `customize:`
+- Provided recorder exclude snippet for ephemeral entities
+
+### v2.1.0 — Original
+
+- Notification toggle switches for each task type
+- Corrected agronomic application rate ranges and units
+- Multi-area support (up to 5 configurable areas)
+- Lawn type selector affecting GDD base temperature
+- Spray conditions forecast (wind + rain analysis)
+- 2024.4+ `weather.get_forecasts` compatibility
+- YAML anchor configuration for 3 user entities
+
+---
+
+## Agronomic Notes for Perth
+
+**Base temperatures** — C4 warm-season grasses (Couch, Kikuyu, Buffalo, Bermuda) use a 10°C base. C3 cool-season grasses use 5°C. The system auto-selects based on the `input_select.lawn_type` dropdown.
+
+**PGR GDD target** — For Trinexapac-ethyl (Primo MAXX, Qualipro T-Nex) on couch/bermuda, 200 GDD is a widely-used reapplication threshold. Kikuyu and Buffalo may benefit from a lower target (150–180 GDD). Adjust based on your product label, concentration, and visual growth response.
+
+**ET₀ model** — The Hargreaves equation is a temperature-only approximation. The assumed extraterrestrial radiation (Ra) of 15.0 MJ/m²/day is reasonable for Perth at ~31.9°S latitude. For higher accuracy, consider integrating a Penman-Monteith model using wind, humidity, and solar radiation data from your weather station. Calibrate against catch-cup or water-meter measurements.
+
+**Perth sandy soils** — Bassendean and Spearwood sand formations drain to field capacity within 2–4 hours of watering. Volumetric soil moisture of 15–25% typically indicates "time to water" for warm-season turf on these soils. If your probe reads volumetric water content (VWC), start with a threshold of 15% and adjust up or down based on visual turf response.
+
+**Soil wetter** — Critical for Perth's hydrophobic sand, especially after dry summers. The system flags soil wetter reminders with a specific `Critical for Perth sandy soil!` message. Typical reapplication intervals are 60–90 days.
+
+**Cycle-soak watering** — Perth's sandy soils benefit from split watering cycles. If the system suggests 20 minutes of irrigation, consider running two 10-minute cycles separated by a 30-minute soak interval. This can be implemented by extending the irrigation automation with a `repeat:` block and a `delay:` action. Perth Water's roster restrictions also apply — check your allocated watering days.
+
+---
+
+## Extending the System
+
+### Adding Relay-Controlled Irrigation
+
+The package provides `sensor.lawn_irrigation_minutes` as a calculated runtime. To automate valve control, add an automation like:
+
+```yaml
+automation:
+  - id: lawn_auto_irrigate
+    alias: "Lawn: Auto Irrigate"
+    trigger:
+      - platform: time
+        at: "05:00:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.lawn_irrigation_minutes
+        above: 0
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: sensor.lawn_avg_soil_moisture
+            state: "unavailable"
+          - condition: numeric_state
+            entity_id: sensor.lawn_avg_soil_moisture
+            below: input_number.lawn_moisture_threshold
+    action:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.irrigation_front_valve
+      - delay:
+          minutes: "{{ states('sensor.lawn_irrigation_minutes') | int(10) }}"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.irrigation_front_valve
+```
+
+### Adding More Soil Probes
+
+Edit the `probe_entities` list in `lawn_care.yaml` — add as many sensor entity IDs as you like. The template averages all probes that report a valid numeric state and ignores any that are `unavailable` or `unknown`.
+
+### Integrating with Rachio / Hydrawise
+
+These controllers have their own ET algorithms. The recommended integration point is to use `sensor.lawn_et_estimate` and `sensor.lawn_irrigation_minutes` as inputs to override zone durations via the Rachio HA integration's `rachio.set_zone_moisture_percent` service call.
 
 ---
 
 ## Troubleshooting
 
-### Spray Conditions Show "Unavailable"
+**Forecast data shows "unavailable"** — Verify your weather entity supports `weather.get_forecasts` with `type: daily`. Test in Developer Tools → Services. The sensor updates hourly and on HA restart.
 
-**Cause:** Weather forecast entity not configured or integration offline
+**GDD is 0 all day** — Check that your temperature sensor is reporting and that `input_number.lawn_temp_daily_max` and `lawn_temp_daily_min` are updating. Inspect the `lawn_temp_track_max` and `lawn_temp_track_min` automations in the automation trace.
 
-**Fix:**
-1. Verify weather integration is working (check States tab)
-2. Edit `lawn_care.yaml` line 26 with correct weather entity
-3. Most HA installations use `weather.home`
-4. Check template sensors for `weather.home` references (search & replace if needed)
+**Reminders fire immediately after install** — Expected. All `input_datetime.lawn_last_*` entities default to `unknown`, which calculates as "infinite days ago". Tap each log button once (or set the dates manually in Developer Tools) to establish a baseline.
 
-### PGR Forecast Shows "Unknown"
+**Stock shows 0 after logging** — If you haven't set initial stock levels, they default to `0`. Deducting from `0` stays at `0`. Set your current stock in the Inventory section first.
 
-**Cause:** Weather forecast doesn't provide temperature data
-
-**Fix:**
-1. Check `state_attr('weather.home', 'forecast')` in Developer Tools → Template
-2. Verify forecast contains `temperature` and `templow` keys
-3. Some weather integrations need "forecast" mode enabled
-
-### Multi-Area Calculations Not Showing
-
-**Cause:** Area sizes set to 0m²
-
-**Fix:**
-1. Go to Settings tab in dashboard
-2. Set area sizes to actual measurements
-3. Areas with 0m² are automatically hidden
-
-### Number Inputs Show as Sliders
-
-**Cause:** Old browser cache
-
-**Fix:**
-1. Hard refresh (Ctrl+Shift+R)
-2. All input_numbers have `mode: box` in v2.0
+**Soil moisture shows "unavailable"** — The default probe entity IDs (`sensor.soil_moisture_front`, `sensor.soil_moisture_back`) are placeholders. Either configure your real sensor IDs or leave as-is — all moisture conditions gracefully pass through when unavailable.
 
 ---
 
-## Migration from v1.0
+## License
 
-If upgrading from v1.0:
-
-1. **Backup your data**
-   - Note current lawn areas
-   - Note current rates and intervals
-   - Export logbook if desired
-
-2. **Uninstall v1.0**
-   - Remove old `lawn_care.yaml`
-   - Remove old dashboard
-
-3. **Install v2.0**
-   - Follow Quick Start guide above
-
-4. **Transfer Settings**
-   - Area 1 = old Front Yard
-   - Area 2 = old Back Yard
-   - Set lawn type (probably "Warm Season (C4)" for Perth)
-   - Restore your rates and intervals
-
-5. **Key Differences**
-   - Areas now numbered 1-5 instead of "front"/"back"
-   - GDD base temp now automatic based on lawn type
-   - Spray conditions require weather forecast entity
-   - Number inputs instead of sliders
+MIT License — use, modify, and share freely.
 
 ---
 
-## Support & Contributions
+## Credits
 
-Created for Perth, Western Australia turf enthusiasts.
+Built for the Perth lawn care community. Inspired by the r/lawncare and r/AussieLawns communities, and the WeatherFlow Tempest integration for Home Assistant.
 
-**Tested on:** Home Assistant 2024.1+  
-**License:** MIT  
-**Version:** 2.0 (2026-02-18)
-
----
-
-## Changelog
-
-### v2.0 (2026-02-18)
-✨ Multi-area support (up to 5 configurable areas)  
-✨ Spray conditions forecast with wind/rain analysis  
-✨ PGR forecast based on 5-day GDD projection  
-✨ Lawn type selector (affects GDD base temperature)  
-✨ Number input fields (replaced sliders)  
-✨ Weather forecast integration  
-✨ Dedicated settings dashboard view  
-✨ Generic entity configuration (3 YAML anchors)
-
-### v1.0 (2026-02-17)
-🚀 Initial release  
-🌡️ GDD tracking  
-📋 11-task management  
-🎨 Botanical theme  
-🧮 Automatic mixing calculations
+Contributions, bug reports, and feature requests welcome via GitHub Issues.

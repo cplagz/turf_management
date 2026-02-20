@@ -1,0 +1,28 @@
+# =============================================================================
+# Recorder Exclude — Perth Turf Management System v3.0
+# =============================================================================
+# Add this to your configuration.yaml under the recorder: section.
+# If you already have a recorder: block, merge the entities lists.
+#
+# These entities are ephemeral (reset daily) or store large JSON blobs
+# that inflate the database unnecessarily.
+#
+# Example merge:
+#   recorder:
+#     purge_keep_days: 10
+#     exclude:
+#       entities:
+#         - ... your existing excludes ...
+#         - input_number.lawn_temp_daily_max     # <-- add these
+#         - input_number.lawn_temp_daily_min
+#         - sensor.lawn_weather_forecast_custom
+# =============================================================================
+
+recorder:
+  exclude:
+    entities:
+      # Daily temp trackers — reset every night, no historical value
+      - input_number.lawn_temp_daily_max
+      - input_number.lawn_temp_daily_min
+      # Forecast sensor — stores full 7-day JSON blob on every hourly update
+      - sensor.lawn_weather_forecast_custom

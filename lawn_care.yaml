@@ -1,5 +1,39 @@
 # =============================================================================
-# Perth Turf Management System v2.3 — Home Assistant Package
+# Perth Turf Management System v3.0 — Home Assistant Package
+# Save as: config/packages/lawn_care.yaml
+#
+# NEW IN v3.0 (patched from v2.1):
+# ✓ Migrated all service: → action: (HA 2024.8+ compliance)
+# ✓ Fixed YAML anchor dereference inside Jinja2 templates
+# ✓ Merged GDD accumulate + temp reset (eliminates race condition)
+# ✓ Robust unavailable/unknown guards on all temp tracking
+# ✓ PGR Days-Until now uses 5-day projection average (stable overnight)
+# ✓ Inventory Tracking with auto-deduct on log scripts
+# ✓ Low Stock alert sensor + automation
+# ✓ ET₀ irrigation estimate (Hargreaves) + irrigation minutes sensor
+# ✓ Soil moisture probe integration (suppresses watering when wet)
+# ✓ Nitrogen tracking (cumulative season counter)
+# ✓ Notification toggle switches (carried forward)
+# ✓ Multi-area support (up to 5 configurable areas)
+# ✓ Lawn type selector (affects GDD calculation)
+# ✓ Spray conditions forecast (wind + rain analysis)
+# ✓ 2024.4+ Weather Forecast Compatibility built-in
+# =============================================================================
+
+# =============================================================================
+# 🔧 USER CONFIGURATION — EDIT THESE THREE LINES FOR YOUR SETUP
+# =============================================================================
+#
+# IMPORTANT: Unlike v2.1, anchors are NO LONGER used inside Jinja2 templates.
+# Edit the three values below. Then do a GLOBAL find-and-replace for
+# the corresponding entity IDs if you use different sensors:
+#
+#   Temperature sensor  → sensor.weatherflow_sensors_temperature
+#   Notify service      → notify.mobile_app_marcs_iphone
+#   Weather forecast    → weather.weatherflow_forecast_home
+#
+# (Search for "# ⚙️ USER-CONFIG" comments throughout this file to locate
+#  all hardcoded references that need changing for your setup.)
 # =============================================================================
 
 homeassistant:
@@ -7,17 +41,26 @@ homeassistant:
     sensor.lawn_gdd_today:
       friendly_name: "Today's GDD"
       icon: mdi:thermometer-lines
-    
-    # ────────────────────────────────────────────────────────────────────────
-    # CONFIGURATION ANCHORS — Edit these three lines only
-    # ────────────────────────────────────────────────────────────────────────
+
+    # Anchors — used ONLY for entity_id references in trigger/target blocks
+    # (never inside Jinja2 {{ }} template strings)
     package.lawn_temp_sensor: &temp_sensor sensor.weatherflow_sensors_temperature
     package.lawn_notify_service: &notify_service notify.mobile_app_marcs_iphone
     package.lawn_weather: &weather_forecast weather.weatherflow_forecast_home
 
+    # Give device_class to input_numbers so they graph properly
+    # (eliminates the need for wrapper template sensors)
+    input_number.lawn_temp_daily_max:
+      device_class: temperature
+      state_class: measurement
+    input_number.lawn_temp_daily_min:
+      device_class: temperature
+      state_class: measurement
+
 # =============================================================================
 # INPUT BOOLEAN — Notification Toggles
 # =============================================================================
+
 input_boolean:
   lawn_notify_mowing:
     name: "Notify: Mowing"
@@ -63,10 +106,19 @@ input_boolean:
     name: "Notify: PGR"
     icon: mdi:bell-ring
     initial: true
+  lawn_notify_low_stock:
+    name: "Notify: Low Stock"
+    icon: mdi:bell-alert
+    initial: true
+  lawn_notify_irrigation:
+    name: "Notify: Irrigation"
+    icon: mdi:bell-ring
+    initial: true
 
 # =============================================================================
 # INPUT SELECT — Lawn Type
 # =============================================================================
+
 input_select:
   lawn_type:
     name: Lawn Type
@@ -80,10 +132,13 @@ input_select:
     icon: mdi:grass
 
 # =============================================================================
-# INPUT NUMBER — Lawn Areas, Rates, Intervals, GDD
+# INPUT NUMBER — Lawn Areas, Rates, Intervals, GDD, Inventory, Irrigation
 # =============================================================================
+
 input_number:
+
   # ── Lawn Areas (5 configurable) ──────────────────────────────────────────
+
   lawn_area_1_size:
     name: "Area 1: Size"
     min: 0
@@ -92,6 +147,7 @@ input_number:
     unit_of_measurement: "m²"
     icon: mdi:texture-box
     mode: box
+
   lawn_area_2_size:
     name: "Area 2: Size"
     min: 0
@@ -100,6 +156,7 @@ input_number:
     unit_of_measurement: "m²"
     icon: mdi:texture-box
     mode: box
+
   lawn_area_3_size:
     name: "Area 3: Size"
     min: 0
@@ -108,6 +165,7 @@ input_number:
     unit_of_measurement: "m²"
     icon: mdi:texture-box
     mode: box
+
   lawn_area_4_size:
     name: "Area 4: Size"
     min: 0
@@ -116,6 +174,7 @@ input_number:
     unit_of_measurement: "m²"
     icon: mdi:texture-box
     mode: box
+
   lawn_area_5_size:
     name: "Area 5: Size"
     min: 0
@@ -126,6 +185,7 @@ input_number:
     mode: box
 
   # ── Application Rates (per 100m²) ───────────────────────────────────────
+
   lawn_rate_granular_fert:
     name: Granular Fertiliser Rate
     min: 0
@@ -134,6 +194,7 @@ input_number:
     unit_of_measurement: "kg/100m²"
     icon: mdi:shaker-outline
     mode: box
+
   lawn_rate_liquid_fert:
     name: Liquid Fertiliser Rate
     min: 0
@@ -142,6 +203,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:water-circle
     mode: box
+
   lawn_rate_kelp:
     name: Kelp Rate
     min: 0
@@ -150,6 +212,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:seed
     mode: box
+
   lawn_rate_humate:
     name: Humate Rate
     min: 0
@@ -158,6 +221,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:cup-water
     mode: box
+
   lawn_rate_soil_wetter:
     name: Soil Wetter Rate
     min: 0
@@ -166,6 +230,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:water-percent
     mode: box
+
   lawn_rate_preemergent:
     name: Pre-emergent Rate
     min: 0
@@ -174,6 +239,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:shield-bug
     mode: box
+
   lawn_rate_insecticide:
     name: Insecticide Rate
     min: 0
@@ -182,6 +248,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:bug-outline
     mode: box
+
   lawn_rate_fungicide:
     name: Fungicide Rate
     min: 0
@@ -190,6 +257,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:mushroom-outline
     mode: box
+
   lawn_rate_herbicide:
     name: Herbicide Rate
     min: 0
@@ -198,6 +266,7 @@ input_number:
     unit_of_measurement: "ml/100m²"
     icon: mdi:sprout-outline
     mode: box
+
   lawn_rate_pgr:
     name: PGR Rate
     min: 0
@@ -208,6 +277,7 @@ input_number:
     mode: box
 
   # ── Task Intervals (Days) ────────────────────────────────────────────────
+
   lawn_interval_mowing:
     name: Mowing Interval
     min: 1
@@ -216,6 +286,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:mower-on
     mode: box
+
   lawn_interval_kelp:
     name: Kelp Interval
     min: 1
@@ -224,6 +295,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:seed
     mode: box
+
   lawn_interval_granular_fert:
     name: Granular Fert Interval
     min: 1
@@ -232,6 +304,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:shaker-outline
     mode: box
+
   lawn_interval_liquid_fert:
     name: Liquid Fert Interval
     min: 1
@@ -240,6 +313,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:water-circle
     mode: box
+
   lawn_interval_humate:
     name: Humate Interval
     min: 1
@@ -248,6 +322,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:cup-water
     mode: box
+
   lawn_interval_soil_wetter:
     name: Soil Wetter Interval
     min: 1
@@ -256,6 +331,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:water-percent
     mode: box
+
   lawn_interval_preemergent:
     name: Pre-emergent Interval
     min: 1
@@ -264,6 +340,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:shield-bug
     mode: box
+
   lawn_interval_insecticide:
     name: Insecticide Interval
     min: 1
@@ -272,6 +349,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:bug-outline
     mode: box
+
   lawn_interval_fungicide:
     name: Fungicide Interval
     min: 1
@@ -280,6 +358,7 @@ input_number:
     unit_of_measurement: "days"
     icon: mdi:mushroom-outline
     mode: box
+
   lawn_interval_herbicide:
     name: Herbicide Interval
     min: 1
@@ -290,6 +369,7 @@ input_number:
     mode: box
 
   # ── GDD Tracking ─────────────────────────────────────────────────────────
+
   pgr_gdd_accumulated:
     name: Accumulated GDD
     min: 0
@@ -298,6 +378,7 @@ input_number:
     unit_of_measurement: "GDD"
     icon: mdi:chart-line
     mode: box
+
   pgr_gdd_target:
     name: Target GDD for PGR
     min: 50
@@ -308,6 +389,7 @@ input_number:
     mode: box
 
   # ── Temperature Tracking ─────────────────────────────────────────────────
+
   lawn_temp_daily_max:
     name: "Today's Max Temp"
     min: -20
@@ -316,6 +398,7 @@ input_number:
     unit_of_measurement: "°C"
     icon: mdi:thermometer-chevron-up
     mode: box
+
   lawn_temp_daily_min:
     name: "Today's Min Temp"
     min: -20
@@ -325,35 +408,194 @@ input_number:
     icon: mdi:thermometer-chevron-down
     mode: box
 
+  # ── Inventory / Stock Levels ─────────────────────────────────────────────
+  # Set these to your current stock when first installing.
+
+  lawn_stock_kelp:
+    name: "Stock: Kelp"
+    min: 0
+    max: 50000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:bottle-tonic
+    mode: box
+
+  lawn_stock_granular_fert:
+    name: "Stock: Granular Fert"
+    min: 0
+    max: 100
+    step: 0.1
+    unit_of_measurement: "kg"
+    icon: mdi:sack
+    mode: box
+
+  lawn_stock_liquid_fert:
+    name: "Stock: Liquid Fert"
+    min: 0
+    max: 50000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:bottle-tonic-outline
+    mode: box
+
+  lawn_stock_humate:
+    name: "Stock: Humate"
+    min: 0
+    max: 50000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:bottle-tonic-plus
+    mode: box
+
+  lawn_stock_soil_wetter:
+    name: "Stock: Soil Wetter"
+    min: 0
+    max: 50000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:bottle-wine
+    mode: box
+
+  lawn_stock_preemergent:
+    name: "Stock: Pre-emergent"
+    min: 0
+    max: 10000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:bottle-tonic-skull
+    mode: box
+
+  lawn_stock_insecticide:
+    name: "Stock: Insecticide"
+    min: 0
+    max: 10000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:bottle-tonic-skull-outline
+    mode: box
+
+  lawn_stock_fungicide:
+    name: "Stock: Fungicide"
+    min: 0
+    max: 10000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:bottle-tonic-plus-outline
+    mode: box
+
+  lawn_stock_herbicide:
+    name: "Stock: Herbicide"
+    min: 0
+    max: 10000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:spray-bottle
+    mode: box
+
+  lawn_stock_pgr:
+    name: "Stock: PGR"
+    min: 0
+    max: 10000
+    step: 10
+    unit_of_measurement: "ml"
+    icon: mdi:spray
+    mode: box
+
+  lawn_stock_alert_threshold:
+    name: "Low Stock Alert Threshold"
+    min: 5
+    max: 50
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:alert-outline
+    mode: slider
+
+  # ── Irrigation Settings ──────────────────────────────────────────────────
+
+  lawn_sprinkler_precip_rate:
+    name: "Sprinkler Precipitation Rate"
+    min: 1
+    max: 40
+    step: 0.5
+    unit_of_measurement: "mm/hr"
+    icon: mdi:sprinkler-variant
+    mode: box
+
+  lawn_moisture_threshold:
+    name: "Soil Moisture Suppress Threshold"
+    min: 0
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:water-thermometer
+    mode: slider
+
+  # ── Nitrogen Tracking ────────────────────────────────────────────────────
+
+  lawn_nitrogen_applied_season:
+    name: "Nitrogen Applied (Season Total)"
+    min: 0
+    max: 100
+    step: 0.01
+    unit_of_measurement: "kg N"
+    icon: mdi:atom
+    mode: box
+
+  lawn_granular_fert_n_fraction:
+    name: "Granular Fert N Content"
+    min: 0
+    max: 1
+    step: 0.01
+    unit_of_measurement: "%/100"
+    icon: mdi:percent
+    mode: box
+
+  lawn_liquid_fert_n_fraction:
+    name: "Liquid Fert N Content"
+    min: 0
+    max: 1
+    step: 0.001
+    unit_of_measurement: "%/100"
+    icon: mdi:percent
+    mode: box
+
+
 # =============================================================================
 # INPUT TEXT — Area Names & Notes
 # =============================================================================
+
 input_text:
+
   lawn_area_1_name:
     name: "Area 1: Name"
     max: 50
     icon: mdi:label
     initial: "Front Yard"
+
   lawn_area_2_name:
     name: "Area 2: Name"
     max: 50
     icon: mdi:label
     initial: "Back Yard"
+
   lawn_area_3_name:
     name: "Area 3: Name"
     max: 50
     icon: mdi:label
     initial: "Side Yard"
+
   lawn_area_4_name:
     name: "Area 4: Name"
     max: 50
     icon: mdi:label
     initial: "Area 4"
+
   lawn_area_5_name:
     name: "Area 5: Name"
     max: 50
     icon: mdi:label
     initial: "Area 5"
+
   lawn_task_notes:
     name: Task Notes
     max: 255
@@ -362,67 +604,82 @@ input_text:
 # =============================================================================
 # INPUT DATETIME — Last Applied
 # =============================================================================
+
 input_datetime:
   lawn_last_mowing:
     name: Last Mowed
     has_date: true
     has_time: true
     icon: mdi:mower-on
+
   lawn_last_kelp:
     name: Last Kelp
     has_date: true
     has_time: true
     icon: mdi:seed
+
   lawn_last_granular_fert:
     name: Last Granular Fert
     has_date: true
     has_time: true
     icon: mdi:shaker-outline
+
   lawn_last_liquid_fert:
     name: Last Liquid Fert
     has_date: true
     has_time: true
     icon: mdi:water-circle
+
   lawn_last_humate:
     name: Last Humate
     has_date: true
     has_time: true
     icon: mdi:cup-water
+
   lawn_last_soil_wetter:
     name: Last Soil Wetter
     has_date: true
     has_time: true
     icon: mdi:water-percent
+
   lawn_last_preemergent:
     name: Last Pre-emergent
     has_date: true
     has_time: true
     icon: mdi:shield-bug
+
   lawn_last_insecticide:
     name: Last Insecticide
     has_date: true
     has_time: true
     icon: mdi:bug-outline
+
   lawn_last_fungicide:
     name: Last Fungicide
     has_date: true
     has_time: true
     icon: mdi:mushroom-outline
+
   lawn_last_herbicide:
     name: Last Herbicide
     has_date: true
     has_time: true
     icon: mdi:sprout-outline
+
   lawn_last_pgr:
     name: Last PGR
     has_date: true
     has_time: true
     icon: mdi:expansion-card-variant
 
+
 # =============================================================================
 # TEMPLATE SENSORS
 # =============================================================================
+
 template:
+
+  # ── Trigger-Based Sensor: Fetch Forecast Data (hourly + on start) ──────
   - trigger:
       - platform: time_pattern
         hours: "/1"
@@ -431,7 +688,7 @@ template:
     action:
       - action: weather.get_forecasts
         target:
-          entity_id: *weather_forecast
+          entity_id: *weather_forecast    # ⚙️ USER-CONFIG
         data:
           type: daily
         response_variable: daily_forecast
@@ -443,28 +700,18 @@ template:
         attributes:
           forecast: "{{ (daily_forecast.values() | list)[0].forecast }}"
 
+  # ── Standard Template Sensors ──────────────────────────────────────────
   - sensor:
-      - name: "Lawn Daily Max Temp"
-        unique_id: lawn_daily_max_temp
-        state: "{{ states('input_number.lawn_temp_daily_max') | float(0) | round(1) }}"
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:thermometer-chevron-up
 
-      - name: "Lawn Daily Min Temp"
-        unique_id: lawn_daily_min_temp
-        state: "{{ states('input_number.lawn_temp_daily_min') | float(0) | round(1) }}"
-        unit_of_measurement: "°C"
-        device_class: temperature
-        state_class: measurement
-        icon: mdi:thermometer-chevron-down
-      
+      # NOTE: The wrapper sensors for daily max/min temp from v2.1 have been
+      # removed. The input_numbers now have device_class/state_class via
+      # customize: — reference input_number.lawn_temp_daily_max directly.
+
       - name: "Lawn GDD Today"
         unique_id: lawn_gdd_today
-        state: >
-          {% set max_temp = states('sensor.lawn_daily_max_temp') | float(0) %}
-          {% set min_temp = states('sensor.lawn_daily_min_temp') | float(0) %}
+        state: |
+          {% set max_temp = states('input_number.lawn_temp_daily_max') | float(0) %}
+          {% set min_temp = states('input_number.lawn_temp_daily_min') | float(0) %}
           {% set lawn_type = states('input_select.lawn_type') %}
           {% if 'Cool Season' in lawn_type %}
             {% set base_temp = 5 %}
@@ -477,12 +724,12 @@ template:
         icon: mdi:thermometer-lines
         attributes:
           lawn_type: "{{ states('input_select.lawn_type') }}"
-          base_temperature: >
+          base_temperature: |
             {% if 'Cool Season' in states('input_select.lawn_type') %}5{% else %}10{% endif %}
-      
+
       - name: "Lawn Total Area"
         unique_id: lawn_total_area
-        state: >
+        state: |
           {{ (states('input_number.lawn_area_1_size') | float(0) +
               states('input_number.lawn_area_2_size') | float(0) +
               states('input_number.lawn_area_3_size') | float(0) +
@@ -490,27 +737,32 @@ template:
               states('input_number.lawn_area_5_size') | float(0)) | round(0) }}
         unit_of_measurement: "m²"
         icon: mdi:texture-box
-      
+
       - name: "Lawn Wind Speed Forecast"
         unique_id: lawn_wind_speed_forecast
-        state: >
+        state: |
           {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
           {% if forecast %}
             {% set max_wind = namespace(value=0) %}
             {% for day in forecast[:1] %}
               {% if day.wind_speed is defined %}
                 {% set wind = day.wind_speed | float(0) %}
-                {% if wind > max_wind.value %}{% set max_wind.value = wind %}{% endif %}
+                {% if wind > max_wind.value %}
+                  {% set max_wind.value = wind %}
+                {% endif %}
               {% endif %}
             {% endfor %}
             {{ max_wind.value | round(1) }}
-          {% else %}0{% endif %}
+          {% else %}
+            0
+          {% endif %}
         unit_of_measurement: "km/h"
         icon: mdi:weather-windy
-      
+        device_class: wind_speed
+
       - name: "Lawn Rain Forecast"
         unique_id: lawn_rain_forecast
-        state: >
+        state: |
           {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
           {% if forecast %}
             {% set total_rain = namespace(value=0) %}
@@ -520,27 +772,48 @@ template:
               {% endif %}
             {% endfor %}
             {{ total_rain.value | round(1) }}
-          {% else %}0{% endif %}
+          {% else %}
+            0
+          {% endif %}
         unit_of_measurement: "mm"
         icon: mdi:weather-pouring
-      
+        device_class: precipitation
+
       - name: "Lawn Spray Conditions"
         unique_id: lawn_spray_conditions
-        state: >
+        state: |
           {% set wind = states('sensor.lawn_wind_speed_forecast') | float(0) %}
           {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
-          {% if wind > 25 or rain > 5 %}Poor
-          {% elif wind > 15 or rain > 2 %}Marginal
-          {% else %}Good{% endif %}
-        icon: >
-          {% set cond = states('sensor.lawn_spray_conditions') %}
-          {% if cond == 'Good' %}mdi:check-circle
-          {% elif cond == 'Marginal' %}mdi:alert-circle
-          {% else %}mdi:close-circle{% endif %}
-      
+          {% if wind > 25 or rain > 5 %}
+            Poor
+          {% elif wind > 15 or rain > 2 %}
+            Marginal
+          {% else %}
+            Good
+          {% endif %}
+        icon: |
+          {% set wind = states('sensor.lawn_wind_speed_forecast') | float(0) %}
+          {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+          {% if wind > 25 or rain > 5 %}mdi:close-circle
+          {% elif wind > 15 or rain > 2 %}mdi:alert-circle
+          {% else %}mdi:check-circle{% endif %}
+        attributes:
+          wind_speed: "{{ states('sensor.lawn_wind_speed_forecast') }} km/h"
+          rain_forecast: "{{ states('sensor.lawn_rain_forecast') }} mm"
+          recommendation: |
+            {% set wind = states('sensor.lawn_wind_speed_forecast') | float(0) %}
+            {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+            {% if wind > 25 or rain > 5 %}
+              Poor conditions. High wind or rain forecast — delay spraying.
+            {% elif wind > 15 or rain > 2 %}
+              Borderline conditions. Monitor wind and rain before spraying.
+            {% else %}
+              Ideal spray conditions. Low wind and minimal rain expected.
+            {% endif %}
+
       - name: "Lawn Next Spray Window"
         unique_id: lawn_next_spray_window
-        state: >
+        state: |
           {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
           {% if forecast %}
             {% set found = namespace(day='') %}
@@ -548,19 +821,27 @@ template:
               {% if found.day == '' %}
                 {% set wind = day.wind_speed | float(100) if day.wind_speed is defined else 100 %}
                 {% set rain = day.precipitation | float(100) if day.precipitation is defined else 100 %}
-                {% if wind < 15 and rain < 2 %}{% set found.day = day.datetime if day.datetime is defined else 'Unknown' %}{% endif %}
+                {% if wind < 15 and rain < 2 %}
+                  {% set found.day = day.datetime if day.datetime is defined else 'Unknown' %}
+                {% endif %}
               {% endif %}
             {% endfor %}
-            {{ found.day[:10] if found.day else 'Unavailable' }}
-          {% else %}unavailable{% endif %}
+            {{ found.day[:10] if found.day else 'No suitable window in next 7 days' }}
+          {% else %}
+            unavailable
+          {% endif %}
         icon: mdi:calendar-check
-      
+
       - name: "Lawn GDD Projection 5-Day"
         unique_id: lawn_gdd_projection_5day
-        state: >
+        state: |
           {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
           {% set lawn_type = states('input_select.lawn_type') %}
-          {% if 'Cool Season' in lawn_type %}{% set base_temp = 5 %}{% else %}{% set base_temp = 10 %}{% endif %}
+          {% if 'Cool Season' in lawn_type %}
+            {% set base_temp = 5 %}
+          {% else %}
+            {% set base_temp = 10 %}
+          {% endif %}
           {% if forecast %}
             {% set total_gdd = namespace(value=0) %}
             {% for day in forecast[:5] %}
@@ -572,36 +853,58 @@ template:
               {% endif %}
             {% endfor %}
             {{ total_gdd.value | round(1) }}
-          {% else %}0{% endif %}
+          {% else %}
+            0
+          {% endif %}
         unit_of_measurement: "GDD"
         icon: mdi:calendar-range
-      
+        attributes:
+          base_temperature: |
+            {% if 'Cool Season' in states('input_select.lawn_type') %}5{% else %}10{% endif %}
+          lawn_type: "{{ states('input_select.lawn_type') }}"
+          days_available: |
+            {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
+            {{ [forecast | length, 5] | min if forecast else 0 }}
+
       - name: "Lawn PGR Days Until"
         unique_id: lawn_pgr_days_until
-        state: >
+        state: |
           {% set current_gdd = states('input_number.pgr_gdd_accumulated') | float(0) %}
           {% set target_gdd = states('input_number.pgr_gdd_target') | float(200) %}
           {% set remaining = target_gdd - current_gdd %}
-          {% if remaining <= 0 %}0
+          {% if remaining <= 0 %}
+            0
           {% else %}
-            {% set daily_avg = states('sensor.lawn_gdd_today') | float(5) %}
-            {% if daily_avg > 0 %}{{ (remaining / daily_avg) | round(0) }}
-            {% else %}unavailable{% endif %}
+            {% set proj_5d = states('sensor.lawn_gdd_projection_5day') | float(0) %}
+            {% set daily_avg = (proj_5d / 5) if proj_5d > 0
+                               else states('sensor.lawn_gdd_today') | float(0) %}
+            {{ (remaining / daily_avg) | round(0) if daily_avg > 0 else 'unavailable' }}
           {% endif %}
         unit_of_measurement: "days"
         icon: mdi:calendar-clock
-      
+        attributes:
+          current_gdd: "{{ states('input_number.pgr_gdd_accumulated') }}"
+          target_gdd: "{{ states('input_number.pgr_gdd_target') }}"
+          gdd_remaining: |
+            {{ (states('input_number.pgr_gdd_target') | float(0) -
+                states('input_number.pgr_gdd_accumulated') | float(0)) | round(1) }}
+
       - name: "Lawn PGR Forecast Date"
         unique_id: lawn_pgr_forecast_date
-        state: >
+        state: |
           {% set current_gdd = states('input_number.pgr_gdd_accumulated') | float(0) %}
           {% set target_gdd = states('input_number.pgr_gdd_target') | float(200) %}
           {% set projection_5day = states('sensor.lawn_gdd_projection_5day') | float(0) %}
-          {% if current_gdd >= target_gdd %}Now
+          {% if current_gdd >= target_gdd %}
+            Now (Target Reached)
           {% elif current_gdd + projection_5day >= target_gdd %}
             {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
             {% set lawn_type = states('input_select.lawn_type') %}
-            {% if 'Cool Season' in lawn_type %}{% set base_temp = 5 %}{% else %}{% set base_temp = 10 %}{% endif %}
+            {% if 'Cool Season' in lawn_type %}
+              {% set base_temp = 5 %}
+            {% else %}
+              {% set base_temp = 10 %}
+            {% endif %}
             {% if forecast %}
               {% set running_gdd = namespace(value=current_gdd) %}
               {% set found_date = namespace(value='') %}
@@ -612,262 +915,738 @@ template:
                     {% set min_t = day.templow | float(0) %}
                     {% set daily_gdd = ((max_t + min_t) / 2) - base_temp %}
                     {% set running_gdd.value = running_gdd.value + ([daily_gdd, 0] | max) %}
-                    {% if running_gdd.value >= target_gdd %}{% set found_date.value = day.datetime if day.datetime is defined else '' %}{% endif %}
+                    {% if running_gdd.value >= target_gdd %}
+                      {% set found_date.value = day.datetime if day.datetime is defined else '' %}
+                    {% endif %}
                   {% endif %}
                 {% endif %}
               {% endfor %}
               {{ found_date.value[:10] if found_date.value else '5+ days' }}
-            {% else %}Unknown{% endif %}
-          {% else %}5+ days{% endif %}
+            {% else %}
+              Unknown
+            {% endif %}
+          {% else %}
+            5+ days
+          {% endif %}
         icon: mdi:calendar-star
 
+      # ── NEW: ET₀ Irrigation Estimate (Hargreaves equation) ──────────────
+      #
+      # Uses a simplified Hargreaves model. The Ra (extraterrestrial radiation)
+      # value of 15.0 MJ/m²/day is approximate for Perth (~31.9°S).
+      # Adjust if you're at a significantly different latitude.
+
+      - name: "Lawn ET Estimate"
+        unique_id: lawn_et_estimate
+        state: |
+          {% set max_t = states('input_number.lawn_temp_daily_max') | float(25) %}
+          {% set min_t = states('input_number.lawn_temp_daily_min') | float(15) %}
+          {% set avg_t = (max_t + min_t) / 2 %}
+          {% set td = max_t - min_t %}
+          {% if td < 0 %}{% set td = 0 %}{% endif %}
+          {% set ra = 15.0 %}
+          {% set et0 = 0.0023 * (avg_t + 17.8) * (td ** 0.5) * ra * 0.408 %}
+          {{ [et0, 0] | max | round(2) }}
+        unit_of_measurement: "mm/day"
+        icon: mdi:water-outline
+        device_class: precipitation
+        state_class: measurement
+        attributes:
+          method: "Hargreaves (simplified)"
+          ra_assumed: "15.0 MJ/m²/day"
+
+      - name: "Lawn Irrigation Minutes"
+        unique_id: lawn_irrigation_minutes
+        state: |
+          {% set et = states('sensor.lawn_et_estimate') | float(0) %}
+          {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+          {% set kc = 0.85 %}
+          {% set net_demand = (et * kc) - rain %}
+          {% set precip_rate = states('input_number.lawn_sprinkler_precip_rate') | float(12) %}
+          {% if net_demand > 0.5 %}
+            {{ ((net_demand / precip_rate) * 60) | round(0) }}
+          {% else %}
+            0
+          {% endif %}
+        unit_of_measurement: "min"
+        icon: mdi:timer-outline
+        attributes:
+          et0: "{{ states('sensor.lawn_et_estimate') }} mm"
+          rain_offset: "{{ states('sensor.lawn_rain_forecast') }} mm"
+          net_demand_mm: |
+            {% set et = states('sensor.lawn_et_estimate') | float(0) %}
+            {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+            {{ ((et * 0.85) - rain) | round(2) }}
+
+      # ── NEW: Soil Moisture Average ──────────────────────────────────────
+      #
+      # Add your soil moisture sensor entity IDs below.
+      # Supports any number of probes — just add them to the list.
+      # If you don't have probes yet, this sensor will show "unavailable"
+      # and all moisture conditions will gracefully pass through.
+
+      - name: "Lawn Average Soil Moisture"
+        unique_id: lawn_avg_soil_moisture
+        state: |
+          {% set probe_entities = [
+            'sensor.soil_moisture_front',
+            'sensor.soil_moisture_back',
+          ] %}
+          {% set valid = namespace(values=[]) %}
+          {% for entity in probe_entities %}
+            {% set val = states(entity) %}
+            {% if val not in ['unavailable', 'unknown', 'none'] %}
+              {% set valid.values = valid.values + [val | float(0)] %}
+            {% endif %}
+          {% endfor %}
+          {% if valid.values | length > 0 %}
+            {{ (valid.values | sum / valid.values | length) | round(1) }}
+          {% else %}
+            unavailable
+          {% endif %}
+        unit_of_measurement: "%"
+        device_class: moisture
+        icon: mdi:water-thermometer
+
+      # ── NEW: Low Stock Items Sensor ─────────────────────────────────────
+
+      - name: "Lawn Low Stock Items"
+        unique_id: lawn_low_stock_items
+        state: |
+          {% set threshold_pct = states('input_number.lawn_stock_alert_threshold') | float(20) / 100 %}
+          {% set products = [
+            ('Kelp',         'lawn_stock_kelp',          50000),
+            ('Granular Fert','lawn_stock_granular_fert',  100),
+            ('Liquid Fert',  'lawn_stock_liquid_fert',   50000),
+            ('Humate',       'lawn_stock_humate',        50000),
+            ('Soil Wetter',  'lawn_stock_soil_wetter',   50000),
+            ('Pre-emergent', 'lawn_stock_preemergent',   10000),
+            ('Insecticide',  'lawn_stock_insecticide',   10000),
+            ('Fungicide',    'lawn_stock_fungicide',     10000),
+            ('Herbicide',    'lawn_stock_herbicide',     10000),
+            ('PGR',          'lawn_stock_pgr',           10000),
+          ] %}
+          {% set low = namespace(count=0) %}
+          {% for name, entity, max_cap in products %}
+            {% set current = states('input_number.' ~ entity) | float(0) %}
+            {% if current <= (max_cap * threshold_pct) and current >= 0 %}
+              {% set low.count = low.count + 1 %}
+            {% endif %}
+          {% endfor %}
+          {{ low.count }}
+        unit_of_measurement: "items"
+        icon: |
+          {% if states('sensor.lawn_low_stock_items') | int(0) > 0 %}
+            mdi:alert-circle
+          {% else %}
+            mdi:check-circle
+          {% endif %}
+        attributes:
+          details: |
+            {% set threshold_pct = states('input_number.lawn_stock_alert_threshold') | float(20) / 100 %}
+            {% set products = [
+              ('Kelp',         'lawn_stock_kelp',          50000, 'ml'),
+              ('Granular Fert','lawn_stock_granular_fert',  100,  'kg'),
+              ('Liquid Fert',  'lawn_stock_liquid_fert',   50000, 'ml'),
+              ('Humate',       'lawn_stock_humate',        50000, 'ml'),
+              ('Soil Wetter',  'lawn_stock_soil_wetter',   50000, 'ml'),
+              ('Pre-emergent', 'lawn_stock_preemergent',   10000, 'ml'),
+              ('Insecticide',  'lawn_stock_insecticide',   10000, 'ml'),
+              ('Fungicide',    'lawn_stock_fungicide',     10000, 'ml'),
+              ('Herbicide',    'lawn_stock_herbicide',     10000, 'ml'),
+              ('PGR',          'lawn_stock_pgr',           10000, 'ml'),
+            ] %}
+            {% set low = namespace(items=[]) %}
+            {% for name, entity, max_cap, unit in products %}
+              {% set current = states('input_number.' ~ entity) | float(0) %}
+              {% if current <= (max_cap * threshold_pct) %}
+                {% set low.items = low.items + [name ~ ': ' ~ current | round(0) ~ unit] %}
+              {% endif %}
+            {% endfor %}
+            {{ low.items | join(' · ') if low.items else 'All stocked' }}
+
+
 # =============================================================================
-# SCRIPTS — Task Logging
+# SCRIPTS — Task Logging (with Inventory Auto-Deduct + Nitrogen Tracking)
 # =============================================================================
+
 script:
+
   lawn_log_mowing:
     alias: "Log Mowing"
     icon: mdi:mower-on
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_mowing }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_mowing
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Lawn Mowing"
-          message: "Mowed lawn (Total: {{ states('sensor.lawn_total_area') }}m²). Notes: {{ states('input_text.lawn_task_notes') or 'None' }}"
+          message: |
+            Mowed lawn (Total: {{ states('sensor.lawn_total_area') }}m²).
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_mowing
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_kelp:
     alias: "Log Kelp"
     icon: mdi:seed
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_kelp }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_kelp
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Kelp Application"
-          message: >
+          message: |
             Applied kelp at {{ states('input_number.lawn_rate_kelp') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_kelp') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_kelp
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_kelp
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_kelp') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_kelp') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_granular_fert:
     alias: "Log Granular Fert"
     icon: mdi:shaker-outline
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_granular_fert }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_granular_fert
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Granular Fertiliser"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_granular_fert') }}kg/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_granular_fert') | float * size) / 100) | round(2) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'kg' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_granular_fert
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_granular_fert
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_granular_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(2) %}
+            {% set current = states('input_number.lawn_stock_granular_fert') | float(0) %}
+            {{ [current - used, 0] | max }}
+      # ── Nitrogen Tracking ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_nitrogen_applied_season
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_granular_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set n_frac = states('input_number.lawn_granular_fert_n_fraction') | float(0.20) %}
+            {% set kg_applied = (rate * area / 100) %}
+            {% set n_kg = kg_applied * n_frac %}
+            {{ (states('input_number.lawn_nitrogen_applied_season') | float(0) + n_kg) | round(2) }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_liquid_fert:
     alias: "Log Liquid Fert"
     icon: mdi:water-circle
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_liquid_fert }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_liquid_fert
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Liquid Fertiliser"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_liquid_fert') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_liquid_fert') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_liquid_fert
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_liquid_fert
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_liquid_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_liquid_fert') | float(0) %}
+            {{ [current - used, 0] | max }}
+      # ── Nitrogen Tracking ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_nitrogen_applied_season
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_liquid_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set n_frac = states('input_number.lawn_liquid_fert_n_fraction') | float(0.05) %}
+            {% set ml_applied = (rate * area / 100) %}
+            {% set n_kg = (ml_applied / 1000) * n_frac %}
+            {{ (states('input_number.lawn_nitrogen_applied_season') | float(0) + n_kg) | round(3) }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_humate:
     alias: "Log Humate"
     icon: mdi:cup-water
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_humate }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_humate
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Humate Application"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_humate') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_humate') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_humate
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_humate
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_humate') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_humate') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_soil_wetter:
     alias: "Log Soil Wetter"
     icon: mdi:water-percent
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_soil_wetter }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_soil_wetter
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Soil Wetter"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_soil_wetter') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_soil_wetter') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_soil_wetter
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_soil_wetter
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_soil_wetter') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_soil_wetter') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_preemergent:
     alias: "Log Pre-emergent"
     icon: mdi:shield-bug
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_preemergent }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_preemergent
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Pre-emergent"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_preemergent') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_preemergent') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_preemergent
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_preemergent
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_preemergent') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_preemergent') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_insecticide:
     alias: "Log Insecticide"
     icon: mdi:bug-outline
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_insecticide }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_insecticide
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Insecticide"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_insecticide') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_insecticide') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_insecticide
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_insecticide
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_insecticide') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_insecticide') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_fungicide:
     alias: "Log Fungicide"
     icon: mdi:mushroom-outline
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_fungicide }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_fungicide
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Fungicide"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_fungicide') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_fungicide') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_fungicide
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_fungicide
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_fungicide') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_fungicide') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_herbicide:
     alias: "Log Herbicide"
     icon: mdi:sprout-outline
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_herbicide }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_herbicide
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "Herbicide"
-          message: >
+          message: |
             Applied at {{ states('input_number.lawn_rate_herbicide') }}ml/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_herbicide') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_herbicide
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_herbicide
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_herbicide') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_herbicide') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
 
   lawn_log_pgr:
     alias: "Log PGR"
     icon: mdi:expansion-card-variant
     sequence:
-      - service: input_datetime.set_datetime
-        target: { entity_id: input_datetime.lawn_last_pgr }
-        data: { timestamp: "{{ now().timestamp() }}" }
-      - service: logbook.log
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_pgr
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
         data:
           name: "PGR Application"
-          message: >
-            Applied PGR at {{ states('input_number.lawn_rate_pgr') }}ml/100m² ({{ states('input_number.pgr_gdd_accumulated') }} GDD — resetting to 0).
+          message: |
+            Applied PGR at {{ states('input_number.lawn_rate_pgr') }}ml/100m²
+            ({{ states('input_number.pgr_gdd_accumulated') }} GDD — resetting to 0).
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_pgr') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
             Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
           entity_id: input_datetime.lawn_last_pgr
-      - service: input_number.set_value
-        target: { entity_id: input_number.pgr_gdd_accumulated }
-        data: { value: 0 }
-      - service: input_text.set_value
-        target: { entity_id: input_text.lawn_task_notes }
-        data: { value: "" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.pgr_gdd_accumulated
+        data:
+          value: 0
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_pgr
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_pgr') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_pgr') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  # ── Utility Script: Reset Seasonal Nitrogen Counter ──────────────────────
+  lawn_reset_nitrogen_season:
+    alias: "Reset Seasonal Nitrogen"
+    icon: mdi:atom-variant
+    sequence:
+      - action: logbook.log
+        data:
+          name: "Nitrogen Reset"
+          message: >
+            Seasonal nitrogen counter reset from {{ states('input_number.lawn_nitrogen_applied_season') }}kg N.
+          entity_id: input_number.lawn_nitrogen_applied_season
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_nitrogen_applied_season
+        data:
+          value: 0
+
 
 # =============================================================================
-# AUTOMATIONS — Reminders (Toggle Switch Dependent)
+# AUTOMATIONS — Temperature, GDD, Reminders, Irrigation, Stock Alerts
 # =============================================================================
+
 automation:
+
+  # ── Temperature Tracking (with robust unavailable/unknown guards) ────────
+
   - id: lawn_temp_track_max
     alias: "Lawn: Track Daily Max"
-    trigger: { platform: state, entity_id: *temp_sensor }
+    trigger:
+      - platform: state
+        entity_id: *temp_sensor    # ⚙️ USER-CONFIG
     condition:
       - condition: template
-        value_template: "{{ states(*temp_sensor) | float(none) is not none and states(*temp_sensor) | float(0) > states('input_number.lawn_temp_daily_max') | float(-99) }}"
+        value_template: |
+          {% set val = states('sensor.weatherflow_sensors_temperature') %}
+          {{ val not in ['unavailable', 'unknown']
+             and val | float(0) > states('input_number.lawn_temp_daily_max') | float(-99) }}
     action:
-      - service: input_number.set_value
-        target: { entity_id: input_number.lawn_temp_daily_max }
-        data: { value: "{{ states(*temp_sensor) | float(0) | round(1) }}" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_max
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
 
   - id: lawn_temp_track_min
     alias: "Lawn: Track Daily Min"
-    trigger: { platform: state, entity_id: *temp_sensor }
+    trigger:
+      - platform: state
+        entity_id: *temp_sensor    # ⚙️ USER-CONFIG
     condition:
       - condition: template
-        value_template: "{{ states(*temp_sensor) | float(none) is not none and states(*temp_sensor) | float(99) < states('input_number.lawn_temp_daily_min') | float(99) }}"
+        value_template: |
+          {% set val = states('sensor.weatherflow_sensors_temperature') %}
+          {{ val not in ['unavailable', 'unknown']
+             and val | float(99) < states('input_number.lawn_temp_daily_min') | float(99) }}
     action:
-      - service: input_number.set_value
-        target: { entity_id: input_number.lawn_temp_daily_min }
-        data: { value: "{{ states(*temp_sensor) | float(0) | round(1) }}" }
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_min
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
 
-  - id: lawn_temp_reset_daily
-    alias: "Lawn: Reset Daily Temperature"
-    trigger: { platform: time, at: "00:00:30" }
-    action:
-      - service: input_number.set_value
-        target: { entity_id: input_number.lawn_temp_daily_max }
-        data: { value: "{{ states(*temp_sensor) | float(0) | round(1) }}" }
-      - service: input_number.set_value
-        target: { entity_id: input_number.lawn_temp_daily_min }
-        data: { value: "{{ states(*temp_sensor) | float(0) | round(1) }}" }
+  # ── MERGED: Daily GDD Accumulate + Temperature Reset ─────────────────────
+  # Runs at 23:59 to capture the full day's extremes before resetting.
+  # Eliminates the v2.1 race condition between separate 00:00:00 / 00:00:30 triggers.
 
-  - id: lawn_gdd_accumulate
-    alias: "Lawn: Accumulate GDD"
-    trigger: { platform: time, at: "00:00:00" }
+  - id: lawn_daily_gdd_cycle
+    alias: "Lawn: Daily GDD Accumulate & Reset"
+    trigger:
+      - platform: time
+        at: "23:59:00"
     action:
-      - service: input_number.set_value
-        target: { entity_id: input_number.pgr_gdd_accumulated }
-        data: { value: "{{ (states('input_number.pgr_gdd_accumulated') | float + states('sensor.lawn_gdd_today') | float) | round(1) }}" }
+      # Step 1: Accumulate today's GDD onto the running total
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.pgr_gdd_accumulated
+        data:
+          value: |
+            {{ (states('input_number.pgr_gdd_accumulated') | float(0)
+                + states('sensor.lawn_gdd_today') | float(0)) | round(1) }}
+      # Step 2: Brief delay to ensure step 1 completes
+      - delay: "00:00:05"
+      # Step 3: Reset daily max/min to current temperature
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_max
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_min
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
+
+  # ── PGR GDD Alert ────────────────────────────────────────────────────────
 
   - id: lawn_pgr_gdd_alert
     alias: "Lawn: PGR GDD Alert"
@@ -880,157 +1659,277 @@ automation:
         entity_id: input_boolean.lawn_notify_pgr
         state: "on"
     action:
-      - service: *notify_service
+      - action: *notify_service    # ⚙️ USER-CONFIG
         data:
           title: "🌱 PGR Application Due"
-          message: "GDD Target Reached! {{ states('input_number.pgr_gdd_accumulated') }} / {{ states('input_number.pgr_gdd_target') }} GDD. Forecast: Apply by {{ states('sensor.lawn_pgr_forecast_date') }}."
+          message: |
+            GDD Target Reached! {{ states('input_number.pgr_gdd_accumulated') }} / {{ states('input_number.pgr_gdd_target') }} GDD.
+            Forecast: Apply by {{ states('sensor.lawn_pgr_forecast_date') }}.
+
+  # ── Task Reminders (all use action: instead of service:) ──────────────────
 
   - id: lawn_mowing_reminder
     alias: "Lawn: Mowing Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_mowing
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_mowing'))) > (states('input_number.lawn_interval_mowing') | float(7) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_mowing')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_mowing') | float(7) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service    # ⚙️ USER-CONFIG
         data:
           title: "🚜 Time to Mow"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_mowing'))) / 86400) | round(0) }} days since last mow."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_mowing'))) / 86400) | round(0) }} days since last mow.
 
   - id: lawn_kelp_reminder
     alias: "Lawn: Kelp Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_kelp
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_kelp'))) > (states('input_number.lawn_interval_kelp') | float(14) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_kelp')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_kelp') | float(14) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "🌿 Kelp Application Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_kelp'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_kelp'))) / 86400) | round(0) }} days overdue.
 
   - id: lawn_granular_fert_reminder
     alias: "Lawn: Granular Fert Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_granular_fert
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_granular_fert'))) > (states('input_number.lawn_interval_granular_fert') | float(60) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_granular_fert')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_granular_fert') | float(60) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "🥣 Granular Fertiliser Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_granular_fert'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_granular_fert'))) / 86400) | round(0) }} days overdue.
 
   - id: lawn_liquid_fert_reminder
     alias: "Lawn: Liquid Fert Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_liquid_fert
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_liquid_fert'))) > (states('input_number.lawn_interval_liquid_fert') | float(14) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_liquid_fert')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_liquid_fert') | float(14) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "💧 Liquid Fertiliser Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_liquid_fert'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_liquid_fert'))) / 86400) | round(0) }} days overdue.
 
   - id: lawn_humate_reminder
     alias: "Lawn: Humate Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_humate
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_humate'))) > (states('input_number.lawn_interval_humate') | float(30) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_humate')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_humate') | float(30) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "☕ Humate Application Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_humate'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_humate'))) / 86400) | round(0) }} days overdue.
 
   - id: lawn_soil_wetter_reminder
     alias: "Lawn: Soil Wetter Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_soil_wetter
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_soil_wetter'))) > (states('input_number.lawn_interval_soil_wetter') | float(90) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_soil_wetter')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_soil_wetter') | float(90) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "💦 Soil Wetter Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_soil_wetter'))) / 86400) | round(0) }} days overdue. Critical for Perth sandy soil!"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_soil_wetter'))) / 86400) | round(0) }} days overdue. Critical for Perth sandy soil!
 
   - id: lawn_preemergent_reminder
     alias: "Lawn: Pre-emergent Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_preemergent
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_preemergent'))) > (states('input_number.lawn_interval_preemergent') | float(120) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_preemergent')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_preemergent') | float(120) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "🛡️ Pre-emergent Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_preemergent'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_preemergent'))) / 86400) | round(0) }} days overdue.
 
   - id: lawn_insecticide_reminder
     alias: "Lawn: Insecticide Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_insecticide
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_insecticide'))) > (states('input_number.lawn_interval_insecticide') | float(90) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_insecticide')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_insecticide') | float(90) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "🐛 Insecticide Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_insecticide'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_insecticide'))) / 86400) | round(0) }} days overdue.
 
   - id: lawn_fungicide_reminder
     alias: "Lawn: Fungicide Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_fungicide
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_fungicide'))) > (states('input_number.lawn_interval_fungicide') | float(30) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_fungicide')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_fungicide') | float(30) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "🍄 Fungicide Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_fungicide'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_fungicide'))) / 86400) | round(0) }} days overdue.
 
   - id: lawn_herbicide_reminder
     alias: "Lawn: Herbicide Reminder"
-    trigger: { platform: time, at: "08:00:00" }
+    trigger:
+      - platform: time
+        at: "08:00:00"
     condition:
       - condition: state
         entity_id: input_boolean.lawn_notify_herbicide
         state: "on"
       - condition: template
-        value_template: "{{ (now().timestamp() - as_timestamp(states('input_datetime.lawn_last_herbicide'))) > (states('input_number.lawn_interval_herbicide') | float(90) * 86400) }}"
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_herbicide')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_herbicide') | float(90) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
     action:
-      - service: *notify_service
+      - action: *notify_service
         data:
           title: "🌱 Herbicide Due"
-          message: "{{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_herbicide'))) / 86400) | round(0) }} days overdue."
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_herbicide'))) / 86400) | round(0) }} days overdue.
+
+  # ── NEW: Low Stock Alert ──────────────────────────────────────────────────
+
+  - id: lawn_low_stock_alert
+    alias: "Lawn: Low Stock Alert"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.lawn_low_stock_items
+        above: 0
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_notify_low_stock
+        state: "on"
+    action:
+      - action: *notify_service
+        data:
+          title: "📦 Low Lawn Care Stock"
+          message: |
+            {{ states('sensor.lawn_low_stock_items') }} product(s) running low:
+            {{ state_attr('sensor.lawn_low_stock_items', 'details') }}
+
+  # ── NEW: Irrigation Suggestion Notification ──────────────────────────────
+  # Sends a notification if irrigation is recommended. Does NOT auto-control
+  # valves (add your own switch actions if you have relay-controlled valves).
+
+  - id: lawn_irrigation_notify
+    alias: "Lawn: Irrigation Suggestion"
+    trigger:
+      - platform: time
+        at: "05:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_notify_irrigation
+        state: "on"
+      - condition: numeric_state
+        entity_id: sensor.lawn_irrigation_minutes
+        above: 0
+      # Suppress if soil is already wet (gracefully skips if sensor unavailable)
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: sensor.lawn_avg_soil_moisture
+            state: "unavailable"
+          - condition: numeric_state
+            entity_id: sensor.lawn_avg_soil_moisture
+            below: input_number.lawn_moisture_threshold
+    action:
+      - action: *notify_service
+        data:
+          title: "💧 Irrigation Recommended"
+          message: |
+            ET₀: {{ states('sensor.lawn_et_estimate') }}mm · Rain forecast: {{ states('sensor.lawn_rain_forecast') }}mm
+            Suggested runtime: {{ states('sensor.lawn_irrigation_minutes') }} minutes.
+            {% if states('sensor.lawn_avg_soil_moisture') != 'unavailable' %}
+            Soil moisture: {{ states('sensor.lawn_avg_soil_moisture') }}%
+            {% endif %}
