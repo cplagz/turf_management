@@ -373,26 +373,32 @@ views:
 
                 hui-generic-entity-row { color: #8fb89a !important; }
 
-          # ── Task Grid (2 columns for mobile compatibility) ───────────────
+          # ── Task Grid (2 columns — conditional on product toggles) ────────
           - type: grid
             columns: 2
             square: false
             cards:
-              - type: custom:mushroom-template-card
-                primary: Mowing
-                secondary: |-
-                  {{ as_timestamp(states('input_datetime.lawn_last_mowing')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:mower-on
-                icon_color: green
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_mowing
-                  confirmation:
-                    text: Log mowing now?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_mowing
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_mowing
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Mowing
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_mowing')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:mower-on
+                  icon_color: green
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_mowing
+                    confirmation:
+                      text: "Log mowing now?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_mowing
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -408,21 +414,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Kelp
-                secondary: |-
-                  {{ as_timestamp(states('input_datetime.lawn_last_kelp')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:seed
-                icon_color: teal
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_kelp
-                  confirmation:
-                    text: Log kelp application?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_kelp
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_kelp
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Kelp
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_kelp')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:seed
+                  icon_color: teal
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_kelp
+                    confirmation:
+                      text: "Log kelp application?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_kelp
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -438,21 +450,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: PGR
-                secondary: |-
-                  {{ as_timestamp(states('input_datetime.lawn_last_pgr')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:expansion-card-variant
-                icon_color: purple
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_pgr
-                  confirmation:
-                    text: Log PGR? (Resets GDD to 0)
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_pgr
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_pgr
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: PGR
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_pgr')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:expansion-card-variant
+                  icon_color: purple
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_pgr
+                    confirmation:
+                      text: "Log PGR? (Resets GDD to 0)"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_pgr
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -468,22 +486,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Granular Fert
-                secondary: |-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_granular_fert'))
-                  | timestamp_custom('%d-%b-%y') }}
-                icon: mdi:shaker-outline
-                icon_color: brown
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_granular_fert
-                  confirmation:
-                    text: Log granular fertiliser?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_granular_fert
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_granular_fert
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Granular Fert
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_granular_fert')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:shaker-outline
+                  icon_color: brown
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_granular_fert
+                    confirmation:
+                      text: "Log granular fertiliser?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_granular_fert
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -499,22 +522,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Liquid Fert
-                secondary: |-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_liquid_fert')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:water-circle
-                icon_color: blue
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_liquid_fert
-                  confirmation:
-                    text: Log liquid fertiliser?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_liquid_fert
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_liquid_fert
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Liquid Fert
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_liquid_fert')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:water-circle
+                  icon_color: blue
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_liquid_fert
+                    confirmation:
+                      text: "Log liquid fertiliser?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_liquid_fert
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -530,21 +558,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Humate
-                secondary: |-
-                  {{ as_timestamp(states('input_datetime.lawn_last_humate')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:cup-water
-                icon_color: deep-orange
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_humate
-                  confirmation:
-                    text: Log humate?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_humate
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_humate
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Humate
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_humate')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:cup-water
+                  icon_color: deep-orange
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_humate
+                    confirmation:
+                      text: "Log humate?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_humate
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -560,22 +594,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Soil Wetter
-                secondary: |-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_soil_wetter')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:water-percent
-                icon_color: cyan
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_soil_wetter
-                  confirmation:
-                    text: Log soil wetter?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_soil_wetter
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_soil_wetter
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Soil Wetter
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_soil_wetter')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:water-percent
+                  icon_color: cyan
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_soil_wetter
+                    confirmation:
+                      text: "Log soil wetter?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_soil_wetter
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -591,22 +630,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Pre-emergent
-                secondary: |-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_preemergent')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:shield-bug
-                icon_color: amber
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_preemergent
-                  confirmation:
-                    text: Log pre-emergent?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_preemergent
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_preemergent
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Pre-emergent
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_preemergent')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:shield-bug
+                  icon_color: amber
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_preemergent
+                    confirmation:
+                      text: "Log pre-emergent?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_preemergent
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -622,22 +666,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Insecticide
-                secondary: |-
-                  {{
-                  as_timestamp(states('input_datetime.lawn_last_insecticide')) |
-                  timestamp_custom('%d-%b-%y') }}
-                icon: mdi:bug-outline
-                icon_color: red
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_insecticide
-                  confirmation:
-                    text: Log insecticide?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_insecticide
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_insecticide
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Insecticide
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_insecticide')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:bug-outline
+                  icon_color: red
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_insecticide
+                    confirmation:
+                      text: "Log insecticide?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_insecticide
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -653,21 +702,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Fungicide
-                secondary: |-
-                  {{ as_timestamp(states('input_datetime.lawn_last_fungicide'))
-                  | timestamp_custom('%d-%b-%y') }}
-                icon: mdi:mushroom-outline
-                icon_color: pink
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_fungicide
-                  confirmation:
-                    text: Log fungicide?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_fungicide
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_fungicide
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Fungicide
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_fungicide')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:mushroom-outline
+                  icon_color: pink
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_fungicide
+                    confirmation:
+                      text: "Log fungicide?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_fungicide
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -683,21 +738,27 @@ views:
 
                     .secondary { color: #4d7058 !important; font-family:
                     monospace !important; font-size: 11px !important; }
-              - type: custom:mushroom-template-card
-                primary: Herbicide
-                secondary: |-
-                  {{ as_timestamp(states('input_datetime.lawn_last_herbicide'))
-                  | timestamp_custom('%d-%b-%y') }}
-                icon: mdi:sprout-outline
-                icon_color: lime
-                tap_action:
-                  action: perform-action
-                  perform_action: script.lawn_log_herbicide
-                  confirmation:
-                    text: Log herbicide?
-                hold_action:
-                  action: more-info
-                  entity: input_datetime.lawn_last_herbicide
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: input_boolean.lawn_product_herbicide
+                    state: "on"
+                card:
+                  type: custom:mushroom-template-card
+                  primary: Herbicide
+                  secondary: |
+                    {% set ts = as_timestamp(states('input_datetime.lawn_last_herbicide')) | float(0) %}
+                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                  icon: mdi:sprout-outline
+                  icon_color: lime
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.lawn_log_herbicide
+                    confirmation:
+                      text: "Log herbicide?"
+                  hold_action:
+                    action: more-info
+                    entity: input_datetime.lawn_last_herbicide
                 card_mod:
                   style: >
                     ha-card { background: #1c2b22 !important; border: 1px solid
@@ -752,16 +813,66 @@ views:
             title: Stock Levels
             show_header_toggle: false
             entities:
-              - entity: input_number.lawn_stock_kelp
-              - entity: input_number.lawn_stock_granular_fert
-              - entity: input_number.lawn_stock_liquid_fert
-              - entity: input_number.lawn_stock_humate
-              - entity: input_number.lawn_stock_soil_wetter
-              - entity: input_number.lawn_stock_preemergent
-              - entity: input_number.lawn_stock_insecticide
-              - entity: input_number.lawn_stock_fungicide
-              - entity: input_number.lawn_stock_herbicide
-              - entity: input_number.lawn_stock_pgr
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_kelp
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_kelp
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_pgr
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_pgr
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_granular_fert
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_granular_fert
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_liquid_fert
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_liquid_fert
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_humate
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_humate
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_soil_wetter
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_soil_wetter
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_preemergent
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_preemergent
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_insecticide
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_insecticide
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_fungicide
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_fungicide
+              - type: conditional
+                conditions:
+                  - entity: input_boolean.lawn_product_herbicide
+                    state: "on"
+                row:
+                  entity: input_number.lawn_stock_herbicide
             card_mod:
               style: >
                 ha-card { background: #1c2b22 !important; border: 1px solid
@@ -772,7 +883,6 @@ views:
                 !important; }
 
                 hui-generic-entity-row { color: #e8f5eb !important; }
-
 
   # ═══════════════════════════════════════════════════════════════════════════
   # VIEW 2: SETTINGS
@@ -810,6 +920,107 @@ views:
             --accent-color: #6fcf80;
           }
     cards:
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🧪 Enabled Products
+              Toggle products on/off to show or hide them from the Dashboard and Inventory views. Disabled products also suppress their reminders.
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            show_header_toggle: true
+            entities:
+              - entity: input_boolean.lawn_product_mowing
+                name: "Mowing"
+                icon: mdi:mower-on
+              - entity: input_boolean.lawn_product_kelp
+                name: "Kelp"
+                icon: mdi:seed
+              - entity: input_boolean.lawn_product_pgr
+                name: "PGR"
+                icon: mdi:expansion-card-variant
+              - entity: input_boolean.lawn_product_granular_fert
+                name: "Granular Fert"
+                icon: mdi:shaker-outline
+              - entity: input_boolean.lawn_product_liquid_fert
+                name: "Liquid Fert"
+                icon: mdi:water-circle
+              - entity: input_boolean.lawn_product_humate
+                name: "Humate"
+                icon: mdi:cup-water
+              - entity: input_boolean.lawn_product_soil_wetter
+                name: "Soil Wetter"
+                icon: mdi:water-percent
+              - entity: input_boolean.lawn_product_preemergent
+                name: "Pre-emergent"
+                icon: mdi:shield-bug
+              - entity: input_boolean.lawn_product_insecticide
+                name: "Insecticide"
+                icon: mdi:bug-outline
+              - entity: input_boolean.lawn_product_fungicide
+                name: "Fungicide"
+                icon: mdi:mushroom-outline
+              - entity: input_boolean.lawn_product_herbicide
+                name: "Herbicide"
+                icon: mdi:sprout-outline
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## ⚖️ Product Units
+              Set each product's measurement unit. This controls the rate (/100m²), stock level, and logbook display.
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_select.lawn_unit_kelp
+                name: "Kelp"
+              - entity: input_select.lawn_unit_granular_fert
+                name: "Granular Fert"
+              - entity: input_select.lawn_unit_liquid_fert
+                name: "Liquid Fert"
+              - entity: input_select.lawn_unit_humate
+                name: "Humate"
+              - entity: input_select.lawn_unit_soil_wetter
+                name: "Soil Wetter"
+              - entity: input_select.lawn_unit_preemergent
+                name: "Pre-emergent"
+              - entity: input_select.lawn_unit_insecticide
+                name: "Insecticide"
+              - entity: input_select.lawn_unit_fungicide
+                name: "Fungicide"
+              - entity: input_select.lawn_unit_herbicide
+                name: "Herbicide"
+              - entity: input_select.lawn_unit_pgr
+                name: "PGR"
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
       - type: vertical-stack
         cards:
           - type: markdown
@@ -902,7 +1113,8 @@ views:
         cards:
           - type: markdown
             content: |
-              ## 💧 Application Rates (per 100m²)
+              ## 💧 Application Rates
+              Rate per 100m² — unit set in Product Units above
             card_mod:
               style: >
                 ha-card { background: transparent; box-shadow: none; border:

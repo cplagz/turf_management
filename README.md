@@ -4,7 +4,7 @@
 > GDD-driven PGR scheduling, inventory tracking, ET₀ irrigation estimates, spray condition forecasting, and a dark-themed Mushroom dashboard — all in a single HA package file.
 
 ![HA Badge](https://img.shields.io/badge/Home%20Assistant-2024.8%2B-blue?logo=homeassistant)
-![Version](https://img.shields.io/badge/version-3.0.1-green)
+![Version](https://img.shields.io/badge/version-3.1.0-green)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 ![Maintenance](https://img.shields.io/badge/maintained-yes-success)
 
@@ -12,9 +12,32 @@
 
 ---
 
-## What's New in v3.0
+## Screenshots
 
-### New Features
+### Dashboard
+![Dashboard View](screenshots/dashboard.jpg)
+
+### Settings
+![Settings View](screenshots/settings.jpg)
+
+### Season Review
+![Season Review](screenshots/season-review.jpg)
+
+---
+
+## What's New in v3.1
+
+- **🧪 Product Toggles** — Enable or disable individual products from the Settings view. Disabled products are hidden from the Dashboard task grid, excluded from the Inventory stock list, and their reminders are automatically suppressed. Products that have never been used show "N/A" instead of a default date.
+
+- **⚖️ Configurable Product Units** — Each product now has a unit selector (`ml`, `g`, `L`, `kg`) in Settings. Changing the unit updates the application rate display, stock level, logbook entries, and low-stock alert details everywhere — no YAML editing required. Defaults: `g` for Granular Fert, `ml` for everything else.
+
+- **Inline Table Styles** — The 5-day forecast table uses pure inline `style=""` attributes. The `<style>` tag approach was stripped by HA's markdown card sanitiser.
+
+- **Jinja2 Whitespace Fix** — Every multi-line Jinja2 template block (76 total) now uses YAML literal scalar (`|`) instead of folded scalar (`>`). Preserves newlines in logbook messages, notification text, and sensor state computations.
+
+## What Was New in v3.0
+
+### Features Added in v3.0
 
 - **📦 Inventory Tracking** — Stock levels for all 10 products auto-deducted when you tap a log button. Configurable low-stock threshold alerts via push notification. Dashboard card shows at-a-glance stock status.
 
@@ -28,13 +51,11 @@
 
 - **🔔 Irrigation & Low Stock Notifications** — Two new toggleable notification automations: daily irrigation suggestions at 5:00 AM (suppressed when soil is wet) and low-stock alerts when any product drops below threshold.
 
-### Improved from v2.x
+### Improvements in v3.0 over v2.x
 
 - **`service:` → `action:`** — All 50+ action calls migrated to the HA 2024.8+ `action:` key. No more deprecation log warnings.
 
 - **`call-service` → `perform-action`** — All 11 dashboard tap actions migrated. Clean on HA 2025.x.
-
-- **Jinja2 Whitespace Fix** — Every multi-line Jinja2 template block (76 total) now uses YAML literal scalar (`|`) instead of folded scalar (`>`). Preserves newlines in logbook messages, notification text, and sensor state computations. Eliminates subtle evaluation bugs from collapsed whitespace.
 
 - **GDD Race Condition Eliminated** — The separate `lawn_gdd_accumulate` (00:00:00) and `lawn_temp_reset_daily` (00:00:30) automations are merged into a single `lawn_daily_gdd_cycle` that runs at 23:59 with ordered actions. No more risk of accumulating a zeroed GDD value on HA restart at midnight.
 
@@ -45,8 +66,6 @@
 - **Spray Conditions Icon Fix** — The icon template no longer self-references its own state on first evaluation. Uses the same wind/rain variables inline.
 
 - **Mobile-Friendly Task Grid** — Reduced from 3 columns to 2 columns so cards remain readable on phone screens. `:hover` CSS replaced with `:active` for proper touch feedback.
-
-- **Inline Table Styles** — The 5-day forecast table uses pure inline `style=""` attributes. The `<style>` tag approach was stripped by HA's markdown card sanitiser.
 
 - **Database Bloat Reduction** — Wrapper template sensors for daily max/min temp removed (redundant with the `input_number` entities). `device_class` and `state_class` applied directly via `customize:`. Recorder exclude snippet provided for ephemeral entities.
 
@@ -66,6 +85,8 @@
 | **Nitrogen Tracking** | Cumulative seasonal N counter (kg). Auto-increments on granular/liquid fert logs. Configurable N-fraction per product |
 | **Multi-Area** | 5 configurable lawn zones with names and sizes. Per-area quantity calculations in logbook entries |
 | **Season Review** | 12-month temp trends, N vs temp dual-axis chart, 90-day GDD bar chart, season summary |
+| **Product Toggles** | Enable/disable individual products from Settings. Hides from Dashboard, Inventory, and suppresses reminders. Unlogged products show "N/A" |
+| **Product Units** | Per-product unit selector (ml/g/L/kg). Flows through to rates, stock, logbook entries, and alerts — no YAML editing needed |
 | **Mobile Dashboard** | 2-column responsive task grid, touch-optimised cards, dark Mushroom theme |
 
 ---
@@ -76,11 +97,11 @@ The package creates the following entities:
 
 | Type | Count | Examples |
 |---|---|---|
-| `input_boolean` | 13 | `lawn_notify_mowing`, `lawn_notify_low_stock`, `lawn_notify_irrigation` |
+| `input_boolean` | 24 | `lawn_notify_mowing`, `lawn_notify_low_stock`, `lawn_notify_irrigation`, `lawn_product_mowing`, `lawn_product_kelp`, `lawn_product_pgr` |
 | `input_number` | 38 | `lawn_area_1_size`, `lawn_rate_kelp`, `lawn_interval_mowing`, `lawn_stock_kelp`, `pgr_gdd_target`, `lawn_sprinkler_precip_rate`, `lawn_nitrogen_applied_season` |
 | `input_datetime` | 11 | `lawn_last_mowing`, `lawn_last_kelp`, `lawn_last_pgr` |
 | `input_text` | 6 | `lawn_area_1_name` through `lawn_area_5_name`, `lawn_task_notes` |
-| `input_select` | 1 | `lawn_type` (Cool Season C3 / Warm Season C4 / Bermuda / Kikuyu / Buffalo) |
+| `input_select` | 11 | `lawn_type` (Cool Season C3 / Warm Season C4 / Bermuda / Kikuyu / Buffalo), `lawn_unit_kelp`, `lawn_unit_granular_fert` through `lawn_unit_pgr` (ml/g/L/kg) |
 | Template sensors | 14 | `lawn_gdd_today`, `lawn_spray_conditions`, `lawn_et_estimate`, `lawn_irrigation_minutes`, `lawn_avg_soil_moisture`, `lawn_low_stock_items`, `lawn_pgr_forecast_date` |
 | Scripts | 12 | `lawn_log_mowing` through `lawn_log_pgr`, `lawn_reset_nitrogen_season` |
 | Automations | 16 | `lawn_temp_track_max`, `lawn_daily_gdd_cycle`, `lawn_pgr_gdd_alert`, 11 task reminders, `lawn_low_stock_alert`, `lawn_irrigation_notify` |
@@ -229,6 +250,14 @@ The dashboard theme references `/local/turf_bg.svg` as a background. Place your 
 
 ## Post-Install Configuration
 
+### Enable Your Products
+
+The **Settings** tab starts with a **🧪 Enabled Products** section. All 11 products are enabled by default. Toggle off any product you don't use — it will be hidden from the Dashboard task grid, removed from the Inventory stock list, and its reminder notifications will be suppressed. You can re-enable at any time.
+
+### Set Your Product Units
+
+Below the product toggles is the **⚖️ Product Units** card. Each product has a dropdown to choose its measurement unit: `ml`, `g`, `L`, or `kg`. This unit is used everywhere — application rate labels, stock levels, logbook entries, area breakdowns, and low-stock alert messages. Change it whenever you switch between liquid and granular formulations of a product. Defaults: `g` for Granular Fert, `ml` for everything else.
+
 ### Lawn Areas
 
 Navigate to the **Settings** tab (⚙️ icon) in the dashboard:
@@ -240,7 +269,7 @@ Navigate to the **Settings** tab (⚙️ icon) in the dashboard:
 
 On the same **Settings** tab:
 
-1. Set **application rates** per 100m² for each product (kg for granular, ml for liquids)
+1. Set **application rates** per 100m² for each product (unit is controlled by Product Units above)
 2. Set **task intervals** in days — this controls when reminders fire
 3. Set **GDD target** for PGR (typically 200 GDD for Trinexapac-ethyl on warm-season turf in Perth)
 
@@ -299,11 +328,15 @@ The main operational view. Sections from top to bottom:
 | **✅ Log Tasks** | Task notes field + 2-column grid of 11 tap-to-log buttons (with confirmation dialogs). Hold any button for `more-info` on the last-applied date |
 | **📦 Inventory** | At-a-glance stock alert card + full stock levels list |
 
+![Dashboard View](screenshots/dashboard.jpg)
+
 ### View 2 — Settings (`/settings`)
 
 All configuration inputs grouped into cards:
 
-Lawn Areas · Notification Toggles · Application Rates · Task Intervals · GDD/PGR Settings · Irrigation Settings · Nitrogen Tracking (with seasonal reset button)
+Enabled Products · Product Units · Lawn Areas · Notification Toggles · Application Rates · Task Intervals · GDD/PGR Settings · Nitrogen Tracking · Irrigation Settings
+
+![Settings View](screenshots/settings.jpg)
 
 ### View 3 — Season Review (`/season`)
 
@@ -316,6 +349,8 @@ Long-term analytics (requires **ApexCharts Card** from HACS for charts):
 | **Daily GDD (90 Days)** | Column chart showing daily GDD values to visualise seasonal growth patterns |
 | **Season Summary** | Snapshot card: total N applied, current accumulated GDD, today's ET₀ |
 
+![Season Review](screenshots/season-review.jpg)
+
 ---
 
 ## File Structure
@@ -325,14 +360,35 @@ perth-turf-management/
 ├── lawn_care.yaml            # HA package — all backend entities, sensors, scripts, automations
 ├── lovelace_dashboard.yaml   # Lovelace — 3 views (Dashboard, Settings, Season Review)
 ├── recorder_exclude.yaml     # Snippet to merge into configuration.yaml
-└── README.md
+├── README.md
+└── screenshots/
+    ├── dashboard.jpg         # View 1 — Dashboard
+    ├── settings.jpg          # View 2 — Settings
+    └── season-review.jpg     # View 3 — Season Review
 ```
 
 ---
 
-## Upgrading from v2.x
+## Upgrading
 
-### Breaking Changes
+### From v3.0.x → v3.1.0
+
+No breaking changes. Replace both `lawn_care.yaml` and `lovelace_dashboard.yaml`, then restart.
+
+New entities are created automatically on restart with sensible defaults:
+
+| New Entity Type | Count | Default |
+|---|---|---|
+| `input_boolean.lawn_product_*` | 11 | All `on` (all products visible) |
+| `input_select.lawn_unit_*` | 10 | `ml` for all except Granular Fert (`g`) |
+
+After restart, go to **Settings → Enabled Products** to disable any products you don't use, and **Settings → Product Units** to change units for any product.
+
+Note: Rate and stock `input_number` entities no longer carry a hardcoded `unit_of_measurement`. Existing history data is unaffected, but HA entity cards will no longer show a unit suffix — the unit is now displayed dynamically via the selector.
+
+### From v2.x → v3.1.0
+
+#### Breaking Changes
 
 1. **`service:` → `action:`** — All script/automation action calls updated. Your external automations that *call* these scripts (e.g., `script.lawn_log_mowing`) will continue to work — the entity IDs are unchanged.
 
@@ -342,9 +398,9 @@ perth-turf-management/
 
 4. **Dashboard tap actions** — `call-service` → `perform-action` on all 11 log buttons. The old syntax still works but generates deprecation warnings in HA 2025.x.
 
-### New Entities to Initialise
+#### New Entities to Initialise
 
-After upgrading, set initial values for these new entities (all default to `0`):
+After upgrading, set initial values for these new entities (all default to `0` or sensible defaults):
 
 | Entity | What to Set |
 |---|---|
@@ -354,39 +410,51 @@ After upgrading, set initial values for these new entities (all default to `0`):
 | `input_number.lawn_stock_alert_threshold` | Low stock alert at this % of max capacity (default 0 → set to 20) |
 | `input_number.lawn_granular_fert_n_fraction` | e.g., `0.20` for 20% N product |
 | `input_number.lawn_liquid_fert_n_fraction` | e.g., `0.05` for 5% N product |
+| `input_boolean.lawn_product_*` (×11) | Toggle off products you don't use |
+| `input_select.lawn_unit_*` (×10) | Set correct unit for each product |
 
 ---
 
 ## Version History
 
-### v3.0.1 — Current
+### v3.1.0 — Current
 
-- Fixed forecast table rendering: replaced `<style>` block (stripped by HA markdown sanitiser) with pure inline styles
-- Fixed 76 Jinja2 template blocks using YAML folded scalar (`>`) instead of literal scalar (`|`)
+- Added product enable/disable toggles — 11 `input_boolean.lawn_product_*` entities that hide disabled products from Dashboard task grid, Inventory stock list, and suppress their reminder automations
+- Added per-product unit selectors — 10 `input_select.lawn_unit_*` entities with options `ml`, `g`, `L`, `kg`. Unit flows through to application rate display, stock levels, logbook messages, area breakdowns, and low-stock alert details
+- Products that have never been logged now display "N/A" instead of `01-Jan-70`
+- Dashboard task grid and inventory stock list use conditional cards/rows — disabled products are hidden, grid reflows automatically
+- Settings view gains two new cards: **🧪 Enabled Products** (with master toggle) and **⚖️ Product Units**
+- Application Rates card header updated to reference Product Units setting
+- Removed hardcoded `unit_of_measurement` from all rate and stock `input_number` entities — unit is now driven entirely by the selector
+
+### v3.0.1
+
+- Fixed forecast table rendering: replaced `<style>` block (stripped by HA markdown card sanitiser) with pure inline `style=""` attributes on all table elements
+- Fixed 76 Jinja2 template blocks using YAML folded scalar (`>`) instead of literal scalar (`|`), which was collapsing newlines in logbook messages and multi-line sensor computations
 
 ### v3.0.0
 
 - Added inventory tracking with auto-deduct on all 10 product log scripts
 - Added low-stock sensor (`sensor.lawn_low_stock_items`) and push alert automation
-- Added ET₀ irrigation estimate (Hargreaves equation, Perth-calibrated Ra)
+- Added ET₀ irrigation estimate (Hargreaves equation, Perth-calibrated Ra = 15.0 MJ/m²/day)
 - Added irrigation minutes sensor with configurable sprinkler precipitation rate
 - Added soil moisture probe integration (multi-probe average, watering suppression)
 - Added nitrogen tracking with per-product N-fraction and seasonal reset
 - Added Season Review dashboard view (3 charts + summary card)
 - Added irrigation and low-stock notification toggles
-- Migrated all `service:` → `action:` (50+ occurrences)
+- Migrated all `service:` → `action:` (50+ occurrences, HA 2024.8+ compliance)
 - Migrated all dashboard `call-service` → `perform-action` (11 tap actions)
-- Merged GDD accumulate + temp reset into single 23:59 automation (race condition fix)
+- Merged GDD accumulate + temp reset into single `lawn_daily_gdd_cycle` at 23:59 (race condition fix)
 - Added `unavailable`/`unknown` guards to temperature tracking automations
-- Stabilised PGR days-until sensor (uses 5-day projection average)
+- Stabilised PGR days-until sensor (uses 5-day projection average instead of today's GDD)
 - Fixed spray conditions icon self-reference on first evaluation
 - Removed redundant wrapper template sensors (daily max/min temp)
 - Reduced task grid to 2 columns for mobile readability
 - Replaced `:hover` with `:active` CSS for touch device feedback
 - Added `device_class`/`state_class` to input_numbers via `customize:`
-- Provided recorder exclude snippet for ephemeral entities
+- Provided `recorder_exclude.yaml` snippet for ephemeral entities
 
-### v2.1.0 — Original
+### v2.1.0
 
 - Notification toggle switches for each task type
 - Corrected agronomic application rate ranges and units
@@ -395,6 +463,14 @@ After upgrading, set initial values for these new entities (all default to `0`):
 - Spray conditions forecast (wind + rain analysis)
 - 2024.4+ `weather.get_forecasts` compatibility
 - YAML anchor configuration for 3 user entities
+
+### v2.0.0
+
+- Initial public release
+- GDD tracking with PGR reapplication forecasting
+- 11 task logging scripts with logbook entries
+- Dark-themed Mushroom dashboard (2 views: Dashboard + Settings)
+- 5-day spray conditions forecast table
 
 ---
 

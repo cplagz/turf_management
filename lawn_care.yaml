@@ -1,8 +1,14 @@
 # =============================================================================
-# Perth Turf Management System v3.0 — Home Assistant Package
+# Perth Turf Management System v3.1.0 — Home Assistant Package
 # Save as: config/packages/lawn_care.yaml
 #
-# NEW IN v3.0 (patched from v2.1):
+# v3.1.0 CHANGELOG:
+# ✓ Product enable/disable toggles (input_boolean.lawn_product_*)
+# ✓ Per-product unit selectors — ml / g / L / kg (input_select.lawn_unit_*)
+# ✓ "N/A" for never-logged products (replaces 01-Jan-70)
+# ✓ Dynamic units in log messages, area breakdowns, stock alerts
+#
+# v3.0.x FEATURES:
 # ✓ Migrated all service: → action: (HA 2024.8+ compliance)
 # ✓ Fixed YAML anchor dereference inside Jinja2 templates
 # ✓ Merged GDD accumulate + temp reset (eliminates race condition)
@@ -13,11 +19,7 @@
 # ✓ ET₀ irrigation estimate (Hargreaves) + irrigation minutes sensor
 # ✓ Soil moisture probe integration (suppresses watering when wet)
 # ✓ Nitrogen tracking (cumulative season counter)
-# ✓ Notification toggle switches (carried forward)
-# ✓ Multi-area support (up to 5 configurable areas)
-# ✓ Lawn type selector (affects GDD calculation)
-# ✓ Spray conditions forecast (wind + rain analysis)
-# ✓ 2024.4+ Weather Forecast Compatibility built-in
+# ✓ All Jinja2 blocks use literal scalar (|) — no folded (>) whitespace bugs
 # =============================================================================
 
 # =============================================================================
@@ -115,6 +117,56 @@ input_boolean:
     icon: mdi:bell-ring
     initial: true
 
+  # ── Product Enable/Disable Toggles ──────────────────────────────────────
+  # Turn these off to hide a product from the Dashboard, Inventory, and
+  # suppress its reminder notifications entirely.
+
+  lawn_product_mowing:
+    name: "Product: Mowing"
+    icon: mdi:mower-on
+    initial: true
+  lawn_product_kelp:
+    name: "Product: Kelp"
+    icon: mdi:seed
+    initial: true
+  lawn_product_granular_fert:
+    name: "Product: Granular Fert"
+    icon: mdi:shaker-outline
+    initial: true
+  lawn_product_liquid_fert:
+    name: "Product: Liquid Fert"
+    icon: mdi:water-circle
+    initial: true
+  lawn_product_humate:
+    name: "Product: Humate"
+    icon: mdi:cup-water
+    initial: true
+  lawn_product_soil_wetter:
+    name: "Product: Soil Wetter"
+    icon: mdi:water-percent
+    initial: true
+  lawn_product_preemergent:
+    name: "Product: Pre-emergent"
+    icon: mdi:shield-bug
+    initial: true
+  lawn_product_insecticide:
+    name: "Product: Insecticide"
+    icon: mdi:bug-outline
+    initial: true
+  lawn_product_fungicide:
+    name: "Product: Fungicide"
+    icon: mdi:mushroom-outline
+    initial: true
+  lawn_product_herbicide:
+    name: "Product: Herbicide"
+    icon: mdi:sprout-outline
+    initial: true
+  lawn_product_pgr:
+    name: "Product: PGR"
+    icon: mdi:expansion-card-variant
+    initial: true
+
+
 # =============================================================================
 # INPUT SELECT — Lawn Type
 # =============================================================================
@@ -130,6 +182,102 @@ input_select:
       - "Buffalo"
     initial: "Warm Season (C4)"
     icon: mdi:grass
+
+  # ── Product Unit Selectors ────────────────────────────────────────────
+  # Sets the unit for both application rate (/100m²) and stock level.
+  # Change these when switching between liquid and granular form of a product.
+
+  lawn_unit_kelp:
+    name: "Kelp Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_granular_fert:
+    name: "Granular Fert Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "g"
+    icon: mdi:scale-balance
+  lawn_unit_liquid_fert:
+    name: "Liquid Fert Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_humate:
+    name: "Humate Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_soil_wetter:
+    name: "Soil Wetter Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_preemergent:
+    name: "Pre-emergent Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_insecticide:
+    name: "Insecticide Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_fungicide:
+    name: "Fungicide Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_herbicide:
+    name: "Herbicide Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+  lawn_unit_pgr:
+    name: "PGR Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    initial: "ml"
+    icon: mdi:scale-balance
+
 
 # =============================================================================
 # INPUT NUMBER — Lawn Areas, Rates, Intervals, GDD, Inventory, Irrigation
@@ -191,7 +339,7 @@ input_number:
     min: 0
     max: 5
     step: 0.1
-    unit_of_measurement: "kg/100m²"
+
     icon: mdi:shaker-outline
     mode: box
 
@@ -200,7 +348,7 @@ input_number:
     min: 0
     max: 1000
     step: 10
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:water-circle
     mode: box
 
@@ -209,7 +357,7 @@ input_number:
     min: 0
     max: 500
     step: 10
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:seed
     mode: box
 
@@ -218,7 +366,7 @@ input_number:
     min: 0
     max: 500
     step: 10
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:cup-water
     mode: box
 
@@ -227,7 +375,7 @@ input_number:
     min: 0
     max: 1000
     step: 10
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:water-percent
     mode: box
 
@@ -236,7 +384,7 @@ input_number:
     min: 0
     max: 100
     step: 1
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:shield-bug
     mode: box
 
@@ -245,7 +393,7 @@ input_number:
     min: 0
     max: 100
     step: 1
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:bug-outline
     mode: box
 
@@ -254,7 +402,7 @@ input_number:
     min: 0
     max: 100
     step: 1
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:mushroom-outline
     mode: box
 
@@ -263,7 +411,7 @@ input_number:
     min: 0
     max: 100
     step: 1
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:sprout-outline
     mode: box
 
@@ -272,7 +420,7 @@ input_number:
     min: 0
     max: 100
     step: 1
-    unit_of_measurement: "ml/100m²"
+
     icon: mdi:expansion-card-variant
     mode: box
 
@@ -416,7 +564,7 @@ input_number:
     min: 0
     max: 50000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:bottle-tonic
     mode: box
 
@@ -425,7 +573,7 @@ input_number:
     min: 0
     max: 100
     step: 0.1
-    unit_of_measurement: "kg"
+
     icon: mdi:sack
     mode: box
 
@@ -434,7 +582,7 @@ input_number:
     min: 0
     max: 50000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:bottle-tonic-outline
     mode: box
 
@@ -443,7 +591,7 @@ input_number:
     min: 0
     max: 50000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:bottle-tonic-plus
     mode: box
 
@@ -452,7 +600,7 @@ input_number:
     min: 0
     max: 50000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:bottle-wine
     mode: box
 
@@ -461,7 +609,7 @@ input_number:
     min: 0
     max: 10000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:bottle-tonic-skull
     mode: box
 
@@ -470,7 +618,7 @@ input_number:
     min: 0
     max: 10000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:bottle-tonic-skull-outline
     mode: box
 
@@ -479,7 +627,7 @@ input_number:
     min: 0
     max: 10000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:bottle-tonic-plus-outline
     mode: box
 
@@ -488,7 +636,7 @@ input_number:
     min: 0
     max: 10000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:spray-bottle
     mode: box
 
@@ -497,7 +645,7 @@ input_number:
     min: 0
     max: 10000
     step: 10
-    unit_of_measurement: "ml"
+
     icon: mdi:spray
     mode: box
 
@@ -1045,16 +1193,16 @@ template:
           details: |
             {% set threshold_pct = states('input_number.lawn_stock_alert_threshold') | float(20) / 100 %}
             {% set products = [
-              ('Kelp',         'lawn_stock_kelp',          50000, 'ml'),
-              ('Granular Fert','lawn_stock_granular_fert',  100,  'kg'),
-              ('Liquid Fert',  'lawn_stock_liquid_fert',   50000, 'ml'),
-              ('Humate',       'lawn_stock_humate',        50000, 'ml'),
-              ('Soil Wetter',  'lawn_stock_soil_wetter',   50000, 'ml'),
-              ('Pre-emergent', 'lawn_stock_preemergent',   10000, 'ml'),
-              ('Insecticide',  'lawn_stock_insecticide',   10000, 'ml'),
-              ('Fungicide',    'lawn_stock_fungicide',     10000, 'ml'),
-              ('Herbicide',    'lawn_stock_herbicide',     10000, 'ml'),
-              ('PGR',          'lawn_stock_pgr',           10000, 'ml'),
+              ('Kelp',         'lawn_stock_kelp',          50000, states('input_select.lawn_unit_kelp')),
+              ('Granular Fert','lawn_stock_granular_fert',  100,  states('input_select.lawn_unit_granular_fert')),
+              ('Liquid Fert',  'lawn_stock_liquid_fert',   50000, states('input_select.lawn_unit_liquid_fert')),
+              ('Humate',       'lawn_stock_humate',        50000, states('input_select.lawn_unit_humate')),
+              ('Soil Wetter',  'lawn_stock_soil_wetter',   50000, states('input_select.lawn_unit_soil_wetter')),
+              ('Pre-emergent', 'lawn_stock_preemergent',   10000, states('input_select.lawn_unit_preemergent')),
+              ('Insecticide',  'lawn_stock_insecticide',   10000, states('input_select.lawn_unit_insecticide')),
+              ('Fungicide',    'lawn_stock_fungicide',     10000, states('input_select.lawn_unit_fungicide')),
+              ('Herbicide',    'lawn_stock_herbicide',     10000, states('input_select.lawn_unit_herbicide')),
+              ('PGR',          'lawn_stock_pgr',           10000, states('input_select.lawn_unit_pgr')),
             ] %}
             {% set low = namespace(items=[]) %}
             {% for name, entity, max_cap, unit in products %}
@@ -1107,14 +1255,14 @@ script:
         data:
           name: "Kelp Application"
           message: |
-            Applied kelp at {{ states('input_number.lawn_rate_kelp') }}ml/100m².
+            Applied kelp at {{ states('input_number.lawn_rate_kelp') }}{{ states('input_select.lawn_unit_kelp') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_kelp') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_kelp') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1150,14 +1298,14 @@ script:
         data:
           name: "Granular Fertiliser"
           message: |
-            Applied at {{ states('input_number.lawn_rate_granular_fert') }}kg/100m².
+            Applied at {{ states('input_number.lawn_rate_granular_fert') }}{{ states('input_select.lawn_unit_granular_fert') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_granular_fert') | float * size) / 100) | round(2) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'kg' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_granular_fert') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1205,14 +1353,14 @@ script:
         data:
           name: "Liquid Fertiliser"
           message: |
-            Applied at {{ states('input_number.lawn_rate_liquid_fert') }}ml/100m².
+            Applied at {{ states('input_number.lawn_rate_liquid_fert') }}{{ states('input_select.lawn_unit_liquid_fert') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_liquid_fert') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_liquid_fert') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1260,14 +1408,14 @@ script:
         data:
           name: "Humate Application"
           message: |
-            Applied at {{ states('input_number.lawn_rate_humate') }}ml/100m².
+            Applied at {{ states('input_number.lawn_rate_humate') }}{{ states('input_select.lawn_unit_humate') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_humate') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_humate') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1302,14 +1450,14 @@ script:
         data:
           name: "Soil Wetter"
           message: |
-            Applied at {{ states('input_number.lawn_rate_soil_wetter') }}ml/100m².
+            Applied at {{ states('input_number.lawn_rate_soil_wetter') }}{{ states('input_select.lawn_unit_soil_wetter') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_soil_wetter') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_soil_wetter') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1344,14 +1492,14 @@ script:
         data:
           name: "Pre-emergent"
           message: |
-            Applied at {{ states('input_number.lawn_rate_preemergent') }}ml/100m².
+            Applied at {{ states('input_number.lawn_rate_preemergent') }}{{ states('input_select.lawn_unit_preemergent') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_preemergent') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_preemergent') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1386,14 +1534,14 @@ script:
         data:
           name: "Insecticide"
           message: |
-            Applied at {{ states('input_number.lawn_rate_insecticide') }}ml/100m².
+            Applied at {{ states('input_number.lawn_rate_insecticide') }}{{ states('input_select.lawn_unit_insecticide') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_insecticide') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_insecticide') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1428,14 +1576,14 @@ script:
         data:
           name: "Fungicide"
           message: |
-            Applied at {{ states('input_number.lawn_rate_fungicide') }}ml/100m².
+            Applied at {{ states('input_number.lawn_rate_fungicide') }}{{ states('input_select.lawn_unit_fungicide') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_fungicide') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_fungicide') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1470,14 +1618,14 @@ script:
         data:
           name: "Herbicide"
           message: |
-            Applied at {{ states('input_number.lawn_rate_herbicide') }}ml/100m².
+            Applied at {{ states('input_number.lawn_rate_herbicide') }}{{ states('input_select.lawn_unit_herbicide') }}/100m².
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
               {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_herbicide') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_herbicide') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1512,7 +1660,7 @@ script:
         data:
           name: "PGR Application"
           message: |
-            Applied PGR at {{ states('input_number.lawn_rate_pgr') }}ml/100m²
+            Applied PGR at {{ states('input_number.lawn_rate_pgr') }}{{ states('input_select.lawn_unit_pgr') }}/100m²
             ({{ states('input_number.pgr_gdd_accumulated') }} GDD — resetting to 0).
             {% set areas = namespace(list='') %}
             {% for i in range(1, 6) %}
@@ -1520,7 +1668,7 @@ script:
               {% if size > 0 %}
                 {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
                 {% set amount = ((states('input_number.lawn_rate_pgr') | float * size) / 100) | round(1) %}
-                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ 'ml' %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_pgr') %}
               {% endif %}
             {% endfor %}
             {{ areas.list }}
@@ -1675,6 +1823,9 @@ automation:
         at: "08:00:00"
     condition:
       - condition: state
+        entity_id: input_boolean.lawn_product_mowing
+        state: "on"
+      - condition: state
         entity_id: input_boolean.lawn_notify_mowing
         state: "on"
       - condition: template
@@ -1695,6 +1846,9 @@ automation:
       - platform: time
         at: "08:00:00"
     condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_kelp
+        state: "on"
       - condition: state
         entity_id: input_boolean.lawn_notify_kelp
         state: "on"
@@ -1717,6 +1871,9 @@ automation:
         at: "08:00:00"
     condition:
       - condition: state
+        entity_id: input_boolean.lawn_product_granular_fert
+        state: "on"
+      - condition: state
         entity_id: input_boolean.lawn_notify_granular_fert
         state: "on"
       - condition: template
@@ -1737,6 +1894,9 @@ automation:
       - platform: time
         at: "08:00:00"
     condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_liquid_fert
+        state: "on"
       - condition: state
         entity_id: input_boolean.lawn_notify_liquid_fert
         state: "on"
@@ -1759,6 +1919,9 @@ automation:
         at: "08:00:00"
     condition:
       - condition: state
+        entity_id: input_boolean.lawn_product_humate
+        state: "on"
+      - condition: state
         entity_id: input_boolean.lawn_notify_humate
         state: "on"
       - condition: template
@@ -1779,6 +1942,9 @@ automation:
       - platform: time
         at: "08:00:00"
     condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_soil_wetter
+        state: "on"
       - condition: state
         entity_id: input_boolean.lawn_notify_soil_wetter
         state: "on"
@@ -1801,6 +1967,9 @@ automation:
         at: "08:00:00"
     condition:
       - condition: state
+        entity_id: input_boolean.lawn_product_preemergent
+        state: "on"
+      - condition: state
         entity_id: input_boolean.lawn_notify_preemergent
         state: "on"
       - condition: template
@@ -1821,6 +1990,9 @@ automation:
       - platform: time
         at: "08:00:00"
     condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_insecticide
+        state: "on"
       - condition: state
         entity_id: input_boolean.lawn_notify_insecticide
         state: "on"
@@ -1843,6 +2015,9 @@ automation:
         at: "08:00:00"
     condition:
       - condition: state
+        entity_id: input_boolean.lawn_product_fungicide
+        state: "on"
+      - condition: state
         entity_id: input_boolean.lawn_notify_fungicide
         state: "on"
       - condition: template
@@ -1863,6 +2038,9 @@ automation:
       - platform: time
         at: "08:00:00"
     condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_herbicide
+        state: "on"
       - condition: state
         entity_id: input_boolean.lawn_notify_herbicide
         state: "on"
