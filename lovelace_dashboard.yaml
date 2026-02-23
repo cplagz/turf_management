@@ -424,7 +424,8 @@ views:
                   primary: Kelp
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_kelp')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_kelp') }}
                   icon: mdi:seed
                   icon_color: teal
                   tap_action:
@@ -460,7 +461,8 @@ views:
                   primary: PGR
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_pgr')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_pgr') }}
                   icon: mdi:expansion-card-variant
                   icon_color: purple
                   tap_action:
@@ -496,7 +498,8 @@ views:
                   primary: Granular Fert
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_granular_fert')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_granular_fert') }}
                   icon: mdi:shaker-outline
                   icon_color: brown
                   tap_action:
@@ -532,7 +535,8 @@ views:
                   primary: Liquid Fert
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_liquid_fert')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_liquid_fert') }}
                   icon: mdi:water-circle
                   icon_color: blue
                   tap_action:
@@ -568,7 +572,8 @@ views:
                   primary: Humate
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_humate')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_humate') }}
                   icon: mdi:cup-water
                   icon_color: deep-orange
                   tap_action:
@@ -604,7 +609,8 @@ views:
                   primary: Soil Wetter
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_soil_wetter')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_soil_wetter') }}
                   icon: mdi:water-percent
                   icon_color: cyan
                   tap_action:
@@ -640,7 +646,8 @@ views:
                   primary: Pre-emergent
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_preemergent')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_preemergent') }}
                   icon: mdi:shield-bug
                   icon_color: amber
                   tap_action:
@@ -676,7 +683,8 @@ views:
                   primary: Insecticide
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_insecticide')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_insecticide') }}
                   icon: mdi:bug-outline
                   icon_color: red
                   tap_action:
@@ -712,7 +720,8 @@ views:
                   primary: Fungicide
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_fungicide')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_fungicide') }}
                   icon: mdi:mushroom-outline
                   icon_color: pink
                   tap_action:
@@ -748,7 +757,8 @@ views:
                   primary: Herbicide
                   secondary: |
                     {% set ts = as_timestamp(states('input_datetime.lawn_last_herbicide')) | float(0) %}
-                    {{ 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') }}
+                    {% set date = 'N/A' if ts < 86400 else ts | timestamp_custom('%d-%b-%y') %}
+                    {{ date }} · {{ states('input_select.lawn_product_db_herbicide') }}
                   icon: mdi:sprout-outline
                   icon_color: lime
                   tap_action:
@@ -1021,6 +1031,121 @@ views:
                 box-shadow: none !important; }
 
                 hui-generic-entity-row { color: #e8f5eb !important; }
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 📋 Product Database
+              Select a commercial product per category. Rate, unit, and N-fraction auto-fill when you change the selection. Choose "Custom" to set your own values.
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            title: Selected Products
+            show_header_toggle: false
+            entities:
+              - entity: input_select.lawn_product_db_kelp
+                name: "Kelp / Seaweed" 
+              - entity: input_select.lawn_product_db_granular_fert
+                name: "Granular Fertiliser" 
+              - entity: input_select.lawn_product_db_liquid_fert
+                name: "Liquid Fertiliser" 
+              - entity: input_select.lawn_product_db_humate
+                name: "Humate / Humic Acid" 
+              - entity: input_select.lawn_product_db_soil_wetter
+                name: "Soil Wetter" 
+              - entity: input_select.lawn_product_db_preemergent
+                name: "Pre-emergent Herbicide" 
+              - entity: input_select.lawn_product_db_insecticide
+                name: "Insecticide" 
+              - entity: input_select.lawn_product_db_fungicide
+                name: "Fungicide" 
+              - entity: input_select.lawn_product_db_herbicide
+                name: "Herbicide" 
+              - entity: input_select.lawn_product_db_pgr
+                name: "Plant Growth Regulator" 
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+          - type: entities
+            title: Application Method
+            show_header_toggle: false
+            entities:
+              - entity: input_select.lawn_app_method_kelp
+                name: "Kelp / Seaweed" 
+              - entity: input_select.lawn_app_method_liquid_fert
+                name: "Liquid Fertiliser" 
+              - entity: input_select.lawn_app_method_humate
+                name: "Humate / Humic Acid" 
+              - entity: input_select.lawn_app_method_preemergent
+                name: "Pre-emergent Herbicide" 
+              - entity: input_select.lawn_app_method_insecticide
+                name: "Insecticide" 
+              - entity: input_select.lawn_app_method_fungicide
+                name: "Fungicide" 
+              - entity: input_select.lawn_app_method_herbicide
+                name: "Herbicide" 
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+          - type: markdown
+            content: |
+              ### 📝 Product Details
+              **Kelp / Seaweed**: {{ states('sensor.lawn_product_info_kelp') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_kelp', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_kelp', 'notes') | default('') | trim }}
+              
+              **Granular Fertiliser**: {{ states('sensor.lawn_product_info_granular_fert') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_granular_fert', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_granular_fert', 'notes') | default('') | trim }}
+              
+              **Liquid Fertiliser**: {{ states('sensor.lawn_product_info_liquid_fert') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_liquid_fert', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_liquid_fert', 'notes') | default('') | trim }}
+              
+              **Humate / Humic Acid**: {{ states('sensor.lawn_product_info_humate') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_humate', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_humate', 'notes') | default('') | trim }}
+              
+              **Soil Wetter**: {{ states('sensor.lawn_product_info_soil_wetter') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_soil_wetter', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_soil_wetter', 'notes') | default('') | trim }}
+              
+              **Pre-emergent Herbicide**: {{ states('sensor.lawn_product_info_preemergent') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_preemergent', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_preemergent', 'notes') | default('') | trim }}
+              
+              **Insecticide**: {{ states('sensor.lawn_product_info_insecticide') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_insecticide', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_insecticide', 'notes') | default('') | trim }}
+              
+              **Fungicide**: {{ states('sensor.lawn_product_info_fungicide') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_fungicide', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_fungicide', 'notes') | default('') | trim }}
+              
+              **Herbicide**: {{ states('sensor.lawn_product_info_herbicide') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_herbicide', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_herbicide', 'notes') | default('') | trim }}
+              
+              **Plant Growth Regulator**: {{ states('sensor.lawn_product_info_pgr') }}
+              *AI:* {{ state_attr('sensor.lawn_product_info_pgr', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_pgr', 'notes') | default('') | trim }}
+              
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                h3 { color: #6fcf80 !important; font-weight: 700 !important; }
+
+                p { color: #e8f5eb !important; font-size: 12px !important; line-height: 1.6 !important; }
+
+                strong { color: #8fb89a !important; }
+
       - type: vertical-stack
         cards:
           - type: markdown

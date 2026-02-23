@@ -4,7 +4,7 @@
 > GDD-driven PGR scheduling, inventory tracking, ET₀ irrigation estimates, spray condition forecasting, and a dark-themed Mushroom dashboard — all in a single HA package file.
 
 ![HA Badge](https://img.shields.io/badge/Home%20Assistant-2024.8%2B-blue?logo=homeassistant)
-![Version](https://img.shields.io/badge/version-3.1.0-green)
+![Version](https://img.shields.io/badge/version-3.2.1-green)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen)
 ![Maintenance](https://img.shields.io/badge/maintained-yes-success)
 
@@ -25,7 +25,19 @@
 
 ---
 
-## What's New in v3.1
+## What's New in v3.2
+
+- **📋 Product Database** — 52 commercial turf products across 10 categories (kelp, granular/liquid fertiliser, humate, soil wetter, pre-emergent, insecticide, fungicide, herbicide, PGR), sourced from Australian-available brands. Select a product from the dropdown and the application rate, unit, and nitrogen fraction auto-populate — no manual lookup needed. Every product includes the active ingredient, application notes, and rate ranges per method. Choose "Custom" in any category to set your own values.
+
+- **🔀 Application Method Selectors** — Seven categories with multiple application methods get their own method dropdown (e.g., Foliar vs Soil Drench, Granular vs Liquid Spray, Foliar Spray vs Curative Drench). Changing the method automatically recalculates the suggested rate for that product.
+
+- **🔬 Product Info Sensors** — 10 new `sensor.lawn_product_info_*` template sensors expose the selected product's rate range, active ingredient, notes, and unit as HA attributes. The Settings view shows a live **📝 Product Details** summary card.
+
+- **📱 Dashboard Product Tags** — Each task grid button now shows the selected product name alongside the last-applied date (e.g., "17-Feb-26 · Primo MAXX"), so you always know what's loaded.
+
+- **🔧 Restart Persistence Fix** (v3.2.1) — Removed `initial:` from all 57 entities. Product toggles, lawn type, area names, product selections, unit selectors, and notification toggles now persist across HA restarts.
+
+## What Was New in v3.1
 
 - **🧪 Product Toggles** — Enable or disable individual products from the Settings view. Disabled products are hidden from the Dashboard task grid, excluded from the Inventory stock list, and their reminders are automatically suppressed. Products that have never been used show "N/A" instead of a default date.
 
@@ -86,6 +98,7 @@
 | **Multi-Area** | 5 configurable lawn zones with names and sizes. Per-area quantity calculations in logbook entries |
 | **Season Review** | 12-month temp trends, N vs temp dual-axis chart, 90-day GDD bar chart, season summary |
 | **Product Toggles** | Enable/disable individual products from Settings. Hides from Dashboard, Inventory, and suppresses reminders. Unlogged products show "N/A" |
+| **Product Database** | 52 commercial products across 10 categories. Auto-fills rate, unit, N-fraction on selection. Method-aware (Foliar/Drench/Granular/Spot) |
 | **Product Units** | Per-product unit selector (ml/g/L/kg). Flows through to rates, stock, logbook entries, and alerts — no YAML editing needed |
 | **Mobile Dashboard** | 2-column responsive task grid, touch-optimised cards, dark Mushroom theme |
 
@@ -101,10 +114,10 @@ The package creates the following entities:
 | `input_number` | 38 | `lawn_area_1_size`, `lawn_rate_kelp`, `lawn_interval_mowing`, `lawn_stock_kelp`, `pgr_gdd_target`, `lawn_sprinkler_precip_rate`, `lawn_nitrogen_applied_season` |
 | `input_datetime` | 11 | `lawn_last_mowing`, `lawn_last_kelp`, `lawn_last_pgr` |
 | `input_text` | 6 | `lawn_area_1_name` through `lawn_area_5_name`, `lawn_task_notes` |
-| `input_select` | 11 | `lawn_type` (Cool Season C3 / Warm Season C4 / Bermuda / Kikuyu / Buffalo), `lawn_unit_kelp`, `lawn_unit_granular_fert` through `lawn_unit_pgr` (ml/g/L/kg) |
-| Template sensors | 14 | `lawn_gdd_today`, `lawn_spray_conditions`, `lawn_et_estimate`, `lawn_irrigation_minutes`, `lawn_avg_soil_moisture`, `lawn_low_stock_items`, `lawn_pgr_forecast_date` |
+| `input_select` | 28 | `lawn_type`, `lawn_unit_kelp` through `lawn_unit_pgr` (ml/g/L/kg), `lawn_product_db_kelp` through `lawn_product_db_pgr` (product names), `lawn_app_method_kelp` etc. (application methods) |
+| Template sensors | 24 | `lawn_gdd_today`, `lawn_spray_conditions`, `lawn_et_estimate`, `lawn_irrigation_minutes`, `lawn_avg_soil_moisture`, `lawn_low_stock_items`, `lawn_pgr_forecast_date`, `lawn_product_info_kelp` through `lawn_product_info_pgr` |
 | Scripts | 12 | `lawn_log_mowing` through `lawn_log_pgr`, `lawn_reset_nitrogen_season` |
-| Automations | 16 | `lawn_temp_track_max`, `lawn_daily_gdd_cycle`, `lawn_pgr_gdd_alert`, 11 task reminders, `lawn_low_stock_alert`, `lawn_irrigation_notify` |
+| Automations | 27 | `lawn_temp_track_max`, `lawn_daily_gdd_cycle`, `lawn_pgr_gdd_alert`, 11 task reminders, `lawn_low_stock_alert`, `lawn_irrigation_notify`, 10 product auto-fill, `lawn_first_run_defaults` |
 
 ---
 
@@ -258,6 +271,16 @@ The **Settings** tab starts with a **🧪 Enabled Products** section. All 11 pro
 
 Below the product toggles is the **⚖️ Product Units** card. Each product has a dropdown to choose its measurement unit: `ml`, `g`, `L`, or `kg`. This unit is used everywhere — application rate labels, stock levels, logbook entries, area breakdowns, and low-stock alert messages. Change it whenever you switch between liquid and granular formulations of a product. Defaults: `g` for Granular Fert, `ml` for everything else.
 
+### Select Your Products
+
+The **📋 Product Database** section has two cards:
+
+1. **Product selectors** — Pick the commercial product you use in each category (e.g., "Primo MAXX" for PGR, "Seasol" for Kelp). Selecting a product auto-fills the application rate, unit, and nitrogen fraction. Choose "Custom" in any category to set your own values manually.
+
+2. **Method selectors** — Seven categories with multiple application methods (e.g., Foliar vs Soil Drench) have a separate method dropdown. Changing the method recalculates the suggested rate.
+
+The **📝 Product Details** card below shows a live summary of every selected product — rate range, active ingredient, and application notes. Use this as a quick reference when mixing.
+
 ### Lawn Areas
 
 Navigate to the **Settings** tab (⚙️ icon) in the dashboard:
@@ -269,7 +292,7 @@ Navigate to the **Settings** tab (⚙️ icon) in the dashboard:
 
 On the same **Settings** tab:
 
-1. Set **application rates** per 100m² for each product (unit is controlled by Product Units above)
+1. Set **application rates** per 100m² for each product (auto-filled when you select a product from the database, but can be overridden manually)
 2. Set **task intervals** in days — this controls when reminders fire
 3. Set **GDD target** for PGR (typically 200 GDD for Trinexapac-ethyl on warm-season turf in Perth)
 
@@ -325,7 +348,7 @@ The main operational view. Sections from top to bottom:
 | **🌡️ Microclimate & GDD** | 48-hour temperature graph (Mini Graph Card), PGR progress bar with dynamic gradient fill |
 | **🌤️ Spray Conditions** | Today's spray assessment, PGR forecast date, 5-day predictive table (wind/rain/spray/GDD) |
 | **💧 Irrigation & Soil** | ET₀ estimate, suggested watering minutes, live soil moisture reading |
-| **✅ Log Tasks** | Task notes field + 2-column grid of 11 tap-to-log buttons (with confirmation dialogs). Hold any button for `more-info` on the last-applied date |
+| **✅ Log Tasks** | Task notes field + 2-column grid of 11 tap-to-log buttons showing selected product name + last-applied date. Hold any button for `more-info` |
 | **📦 Inventory** | At-a-glance stock alert card + full stock levels list |
 
 ![Dashboard View](screenshots/dashboard.jpg)
@@ -334,7 +357,7 @@ The main operational view. Sections from top to bottom:
 
 All configuration inputs grouped into cards:
 
-Enabled Products · Product Units · Lawn Areas · Notification Toggles · Application Rates · Task Intervals · GDD/PGR Settings · Nitrogen Tracking · Irrigation Settings
+Enabled Products · Product Units · Product Database · Product Details · Lawn Areas · Notification Toggles · Application Rates · Task Intervals · GDD/PGR Settings · Nitrogen Tracking · Irrigation Settings
 
 ![Settings View](screenshots/settings.jpg)
 
@@ -361,6 +384,8 @@ perth-turf-management/
 ├── lovelace_dashboard.yaml   # Lovelace — 3 views (Dashboard, Settings, Season Review)
 ├── recorder_exclude.yaml     # Snippet to merge into configuration.yaml
 ├── README.md
+├── LICENSE                   # MIT license
+├── .gitignore
 └── screenshots/
     ├── dashboard.jpg         # View 1 — Dashboard
     ├── settings.jpg          # View 2 — Settings
@@ -371,22 +396,41 @@ perth-turf-management/
 
 ## Upgrading
 
-### From v3.0.x → v3.1.0
+### From v3.2.0 → v3.2.1
+
+Drop-in fix. Replace `lawn_care.yaml` and restart. All your current entity values will be preserved — HA will no longer reset them.
+
+### From v3.1.x → v3.2.1
 
 No breaking changes. Replace both `lawn_care.yaml` and `lovelace_dashboard.yaml`, then restart.
 
-New entities are created automatically on restart with sensible defaults:
+New entities are created automatically on restart:
+
+| New Entity Type | Count | Default |
+|---|---|---|
+| `input_select.lawn_product_db_*` | 10 | First product in each category (e.g., "Seasol" for Kelp) |
+| `input_select.lawn_app_method_*` | 7 | "Foliar" for liquid categories, "Broadcast" for granular |
+| `sensor.lawn_product_info_*` | 10 | Auto-populated from selected product |
+
+After restart, go to **Settings → Product Database** to select your actual products. The auto-fill automation will set the rate, unit, and N-fraction automatically. Override any values manually if needed.
+
+### From v3.0.x → v3.2.1
+
+No breaking changes. Replace both files and restart. New entities from both v3.1 and v3.2 are created automatically:
 
 | New Entity Type | Count | Default |
 |---|---|---|
 | `input_boolean.lawn_product_*` | 11 | All `on` (all products visible) |
 | `input_select.lawn_unit_*` | 10 | `ml` for all except Granular Fert (`g`) |
+| `input_select.lawn_product_db_*` | 10 | First product in each category |
+| `input_select.lawn_app_method_*` | 7 | "Foliar" or "Broadcast" |
+| `sensor.lawn_product_info_*` | 10 | Auto-populated from selected product |
 
-After restart, go to **Settings → Enabled Products** to disable any products you don't use, and **Settings → Product Units** to change units for any product.
+After restart: disable unused products in **Enabled Products**, select your products in **Product Database**, and verify units in **Product Units**.
 
-Note: Rate and stock `input_number` entities no longer carry a hardcoded `unit_of_measurement`. Existing history data is unaffected, but HA entity cards will no longer show a unit suffix — the unit is now displayed dynamically via the selector.
+Note: Rate and stock `input_number` entities no longer carry a hardcoded `unit_of_measurement`. Existing history data is unaffected.
 
-### From v2.x → v3.1.0
+### From v2.x → v3.2.1
 
 #### Breaking Changes
 
@@ -412,12 +456,31 @@ After upgrading, set initial values for these new entities (all default to `0` o
 | `input_number.lawn_liquid_fert_n_fraction` | e.g., `0.05` for 5% N product |
 | `input_boolean.lawn_product_*` (×11) | Toggle off products you don't use |
 | `input_select.lawn_unit_*` (×10) | Set correct unit for each product |
+| `input_select.lawn_product_db_*` (×10) | Select your commercial products |
+| `input_select.lawn_app_method_*` (×7) | Choose application method per product |
 
 ---
 
 ## Version History
 
-### v3.1.0 — Current
+### v3.2.1 — Current
+
+- **BUGFIX:** Removed `initial:` from all 57 entities (`input_boolean`, `input_select`, `input_text`). HA was resetting product toggles, lawn type, area names, product database selections, unit selectors, and notification toggles back to defaults on every restart. Entity values now persist across restarts as expected.
+- Added `lawn_first_run_defaults` automation — on fresh install (all product toggles off), automatically enables all 24 boolean toggles (products + notifications) so the dashboard isn't empty on first boot. Skips on subsequent restarts if any toggle is already on.
+
+### v3.2.0
+
+- Added product database with 52 commercial Australian turf products across 10 categories
+- Each product entry includes: rate ranges (low–high), default unit, active ingredient, application notes, and nitrogen fraction (where applicable)
+- Added 10 `input_select.lawn_product_db_*` product selector dropdowns + 7 `input_select.lawn_app_method_*` method selectors
+- Added 10 `sensor.lawn_product_info_*` template sensors exposing selected product's rate range, AI, notes, and unit as attributes
+- Added 10 `lawn_product_autofill_*` automations — changing the product dropdown auto-sets the application rate, unit, and N-fraction
+- Application method selectors (Foliar / Soil Drench / Broadcast / Spot) recalculate recommended rate per method
+- Dashboard task cards now show selected product name alongside last-applied date
+- Settings view gains **📋 Product Database** section (product + method selectors) and **📝 Product Details** live info card
+- "Custom" option in every category for unlisted products — retains manual rate control
+
+### v3.1.0
 
 - Added product enable/disable toggles — 11 `input_boolean.lawn_product_*` entities that hide disabled products from Dashboard task grid, Inventory stock list, and suppress their reminder automations
 - Added per-product unit selectors — 10 `input_select.lawn_unit_*` entities with options `ml`, `g`, `L`, `kg`. Unit flows through to application rate display, stock levels, logbook messages, area breakdowns, and low-stock alert details

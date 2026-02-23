@@ -1,25 +1,26 @@
 # =============================================================================
-# Perth Turf Management System v3.1.0 — Home Assistant Package
+# Perth Turf Management System v3.2.1 — Home Assistant Package
 # Save as: config/packages/lawn_care.yaml
 #
-# v3.1.0 CHANGELOG:
+# v3.2.1:
+# ✓ Removed all initial: keys — entity values now persist across HA restarts
+#
+# v3.2.0:
+# ✓ Product Database — 52 Australian turf products across 10 categories
+# ✓ Auto-fill rates, units, and N-fraction on product selection
+# ✓ Application method selectors (Foliar/Soil Drench/Granular/Spot Spray)
+# ✓ Product info sensors with AI, notes, and rate ranges per method
+# ✓ Dashboard task cards show selected product name
+#
+# v3.1.0:
 # ✓ Product enable/disable toggles (input_boolean.lawn_product_*)
 # ✓ Per-product unit selectors — ml / g / L / kg (input_select.lawn_unit_*)
 # ✓ "N/A" for never-logged products (replaces 01-Jan-70)
-# ✓ Dynamic units in log messages, area breakdowns, stock alerts
 #
-# v3.0.x FEATURES:
-# ✓ Migrated all service: → action: (HA 2024.8+ compliance)
-# ✓ Fixed YAML anchor dereference inside Jinja2 templates
-# ✓ Merged GDD accumulate + temp reset (eliminates race condition)
-# ✓ Robust unavailable/unknown guards on all temp tracking
-# ✓ PGR Days-Until now uses 5-day projection average (stable overnight)
-# ✓ Inventory Tracking with auto-deduct on log scripts
-# ✓ Low Stock alert sensor + automation
-# ✓ ET₀ irrigation estimate (Hargreaves) + irrigation minutes sensor
-# ✓ Soil moisture probe integration (suppresses watering when wet)
-# ✓ Nitrogen tracking (cumulative season counter)
-# ✓ All Jinja2 blocks use literal scalar (|) — no folded (>) whitespace bugs
+# v3.0.x:
+# ✓ Inventory tracking, ET₀ irrigation, soil moisture, nitrogen tracking
+# ✓ Season Review dashboard, all HA 2024.8+ migrations
+# ✓ All Jinja2 blocks use literal scalar (|)
 # =============================================================================
 
 # =============================================================================
@@ -67,55 +68,42 @@ input_boolean:
   lawn_notify_mowing:
     name: "Notify: Mowing"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_kelp:
     name: "Notify: Kelp"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_granular_fert:
     name: "Notify: Granular Fert"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_liquid_fert:
     name: "Notify: Liquid Fert"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_humate:
     name: "Notify: Humate"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_soil_wetter:
     name: "Notify: Soil Wetter"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_preemergent:
     name: "Notify: Pre-emergent"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_insecticide:
     name: "Notify: Insecticide"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_fungicide:
     name: "Notify: Fungicide"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_herbicide:
     name: "Notify: Herbicide"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_pgr:
     name: "Notify: PGR"
     icon: mdi:bell-ring
-    initial: true
   lawn_notify_low_stock:
     name: "Notify: Low Stock"
     icon: mdi:bell-alert
-    initial: true
   lawn_notify_irrigation:
     name: "Notify: Irrigation"
     icon: mdi:bell-ring
-    initial: true
 
   # ── Product Enable/Disable Toggles ──────────────────────────────────────
   # Turn these off to hide a product from the Dashboard, Inventory, and
@@ -124,47 +112,36 @@ input_boolean:
   lawn_product_mowing:
     name: "Product: Mowing"
     icon: mdi:mower-on
-    initial: true
   lawn_product_kelp:
     name: "Product: Kelp"
     icon: mdi:seed
-    initial: true
   lawn_product_granular_fert:
     name: "Product: Granular Fert"
     icon: mdi:shaker-outline
-    initial: true
   lawn_product_liquid_fert:
     name: "Product: Liquid Fert"
     icon: mdi:water-circle
-    initial: true
   lawn_product_humate:
     name: "Product: Humate"
     icon: mdi:cup-water
-    initial: true
   lawn_product_soil_wetter:
     name: "Product: Soil Wetter"
     icon: mdi:water-percent
-    initial: true
   lawn_product_preemergent:
     name: "Product: Pre-emergent"
     icon: mdi:shield-bug
-    initial: true
   lawn_product_insecticide:
     name: "Product: Insecticide"
     icon: mdi:bug-outline
-    initial: true
   lawn_product_fungicide:
     name: "Product: Fungicide"
     icon: mdi:mushroom-outline
-    initial: true
   lawn_product_herbicide:
     name: "Product: Herbicide"
     icon: mdi:sprout-outline
-    initial: true
   lawn_product_pgr:
     name: "Product: PGR"
     icon: mdi:expansion-card-variant
-    initial: true
 
 
 # =============================================================================
@@ -180,7 +157,6 @@ input_select:
       - "Bermuda"
       - "Kikuyu"
       - "Buffalo"
-    initial: "Warm Season (C4)"
     icon: mdi:grass
 
   # ── Product Unit Selectors ────────────────────────────────────────────
@@ -194,7 +170,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_granular_fert:
     name: "Granular Fert Unit"
@@ -203,7 +178,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "g"
     icon: mdi:scale-balance
   lawn_unit_liquid_fert:
     name: "Liquid Fert Unit"
@@ -212,7 +186,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_humate:
     name: "Humate Unit"
@@ -221,7 +194,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_soil_wetter:
     name: "Soil Wetter Unit"
@@ -230,7 +202,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_preemergent:
     name: "Pre-emergent Unit"
@@ -239,7 +210,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_insecticide:
     name: "Insecticide Unit"
@@ -248,7 +218,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_fungicide:
     name: "Fungicide Unit"
@@ -257,7 +226,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_herbicide:
     name: "Herbicide Unit"
@@ -266,7 +234,6 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
   lawn_unit_pgr:
     name: "PGR Unit"
@@ -275,9 +242,147 @@ input_select:
       - "g"
       - "L"
       - "kg"
-    initial: "ml"
     icon: mdi:scale-balance
 
+
+  # ── Product Database Selectors ─────────────────────────────────────────
+  # Select a commercial product to auto-fill application rates.
+  # Change to 'Custom' to use your own rates.
+
+  lawn_product_db_kelp:
+    name: "Kelp / Seaweed Product"
+    options:
+      - "Seasol"
+      - "Kelpak"
+      - "Eco-Aminogro"
+      - "Seasol PowerFeed"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_kelp:
+    name: "Kelp / Seaweed Method"
+    options:
+      - "Foliar"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_granular_fert:
+    name: "Granular Fertiliser Product"
+    options:
+      - "Scotts Lawn Builder All Purpose"
+      - "Yates Buffalo Pro"
+      - "Baileys 3.1.1"
+      - "Lawn Solutions Premium Fert"
+      - "Katek Super Growth"
+      - "Custom"
+    icon: mdi:database
+  lawn_product_db_liquid_fert:
+    name: "Liquid Fertiliser Product"
+    options:
+      - "PowerFeed LawnFeed"
+      - "Exceed Liquid 20-1-5"
+      - "Lawn Solutions Launcher"
+      - "Yates Thrive Lawn Liquid"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_liquid_fert:
+    name: "Liquid Fertiliser Method"
+    options:
+      - "Foliar"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_humate:
+    name: "Humate / Humic Acid Product"
+    options:
+      - "Exceed Humate 12%"
+      - "Lawn Solutions Lawn Rescue"
+      - "Carbon Mate"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_humate:
+    name: "Humate / Humic Acid Method"
+    options:
+      - "Foliar"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_soil_wetter:
+    name: "Soil Wetter Product"
+    options:
+      - "Seasol Super Soil Wetter"
+      - "Yates Waterwise"
+      - "Lawn Solutions Lawn Soaker"
+      - "Hydramaxx"
+      - "Custom"
+    icon: mdi:database
+  lawn_product_db_preemergent:
+    name: "Pre-emergent Herbicide Product"
+    options:
+      - "Oxafert (Oxadiazon 2%)"
+      - "Barricade WG (Prodiamine)"
+      - "Specticle Flo (Indaziflam)"
+      - "Onset 10GR (Oxadiazon)"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_preemergent:
+    name: "Pre-emergent Herbicide Method"
+    options:
+      - "Granular"
+      - "Liquid Spray"
+    icon: mdi:spray
+  lawn_product_db_insecticide:
+    name: "Insecticide Product"
+    options:
+      - "Acelepryn GR"
+      - "Acelepryn SC"
+      - "Battle Insecticide"
+      - "Yates Grub Kill & Protect"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_insecticide:
+    name: "Insecticide Method"
+    options:
+      - "Granular"
+      - "Liquid Spray"
+    icon: mdi:spray
+  lawn_product_db_fungicide:
+    name: "Fungicide Product"
+    options:
+      - "Dedicate (Tebuconazole)"
+      - "Heritage Maxx (Azoxystrobin)"
+      - "Bumper (Propiconazole)"
+      - "Headway Maxx"
+      - "Mancozeb 750WG"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_fungicide:
+    name: "Fungicide Method"
+    options:
+      - "Foliar Spray"
+      - "Curative Drench"
+    icon: mdi:spray
+  lawn_product_db_herbicide:
+    name: "Herbicide Product"
+    options:
+      - "Bow and Arrow"
+      - "Kamba M"
+      - "Sedgehammer"
+      - "Monument (Trifloxysulfuron)"
+      - "Destiny (Clethodim)"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_herbicide:
+    name: "Herbicide Method"
+    options:
+      - "Foliar Spray"
+      - "Spot Spray"
+    icon: mdi:spray
+  lawn_product_db_pgr:
+    name: "Plant Growth Regulator Product"
+    options:
+      - "Primo MAXX"
+      - "T-Nex 1L"
+      - "Moddus Evo"
+      - "Qualipro T-Nex"
+      - "Custom"
+    icon: mdi:database
 
 # =============================================================================
 # INPUT NUMBER — Lawn Areas, Rates, Intervals, GDD, Inventory, Irrigation
@@ -718,31 +823,26 @@ input_text:
     name: "Area 1: Name"
     max: 50
     icon: mdi:label
-    initial: "Front Yard"
 
   lawn_area_2_name:
     name: "Area 2: Name"
     max: 50
     icon: mdi:label
-    initial: "Back Yard"
 
   lawn_area_3_name:
     name: "Area 3: Name"
     max: 50
     icon: mdi:label
-    initial: "Side Yard"
 
   lawn_area_4_name:
     name: "Area 4: Name"
     max: 50
     icon: mdi:label
-    initial: "Area 4"
 
   lawn_area_5_name:
     name: "Area 5: Name"
     max: 50
     icon: mdi:label
-    initial: "Area 5"
 
   lawn_task_notes:
     name: Task Notes
@@ -1213,6 +1313,352 @@ template:
             {% endfor %}
             {{ low.items | join(' · ') if low.items else 'All stocked' }}
 
+
+
+      # ── Product Database Info Sensors ──────────────────────────────────
+      # Each sensor reports the selected product's rate range, AI, and notes.
+      # The product DB is embedded in Jinja2 — no external files needed.
+
+      - name: "Kelp / Seaweed Product Info"
+        unique_id: lawn_product_info_kelp
+        state: |
+          {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_kelp') %}
+          {% set method = states('input_select.lawn_app_method_kelp') %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_kelp') }}"
+          method: "{{ states('input_select.lawn_app_method_kelp') }}"
+          active_ingredient: |
+            {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_kelp'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_kelp'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_kelp'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_kelp'), [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_kelp'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_kelp'), [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_kelp'), {}).get('u', 'ml') }}
+      - name: "Granular Fertiliser Product Info"
+        unique_id: lawn_product_info_granular_fert
+        state: |
+          {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+          {% set sel = states('input_select.lawn_product_db_granular_fert') %}
+          {% set method = 'Broadcast' %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_granular_fert') }}"
+          method: "{{ 'Broadcast' }}"
+          active_ingredient: |
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_granular_fert'), {}) %}
+            {% set r = p.get('r', {}).get('Broadcast', [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_granular_fert'), {}) %}
+            {% set r = p.get('r', {}).get('Broadcast', [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('u', 'ml') }}
+      - name: "Liquid Fertiliser Product Info"
+        unique_id: lawn_product_info_liquid_fert
+        state: |
+          {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+          {% set sel = states('input_select.lawn_product_db_liquid_fert') %}
+          {% set method = states('input_select.lawn_app_method_liquid_fert') %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_liquid_fert') }}"
+          method: "{{ states('input_select.lawn_app_method_liquid_fert') }}"
+          active_ingredient: |
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_liquid_fert'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_liquid_fert'), [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_liquid_fert'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_liquid_fert'), [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('u', 'ml') }}
+      - name: "Humate / Humic Acid Product Info"
+        unique_id: lawn_product_info_humate
+        state: |
+          {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_humate') %}
+          {% set method = states('input_select.lawn_app_method_humate') %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_humate') }}"
+          method: "{{ states('input_select.lawn_app_method_humate') }}"
+          active_ingredient: |
+            {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_humate'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_humate'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_humate'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_humate'), [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_humate'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_humate'), [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_humate'), {}).get('u', 'ml') }}
+      - name: "Soil Wetter Product Info"
+        unique_id: lawn_product_info_soil_wetter
+        state: |
+          {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_soil_wetter') %}
+          {% set method = 'Soil Drench' %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_soil_wetter') }}"
+          method: "{{ 'Soil Drench' }}"
+          active_ingredient: |
+            {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_soil_wetter'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_soil_wetter'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_soil_wetter'), {}) %}
+            {% set r = p.get('r', {}).get('Soil Drench', [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_soil_wetter'), {}) %}
+            {% set r = p.get('r', {}).get('Soil Drench', [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_soil_wetter'), {}).get('u', 'ml') }}
+      - name: "Pre-emergent Herbicide Product Info"
+        unique_id: lawn_product_info_preemergent
+        state: |
+          {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_preemergent') %}
+          {% set method = states('input_select.lawn_app_method_preemergent') %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_preemergent') }}"
+          method: "{{ states('input_select.lawn_app_method_preemergent') }}"
+          active_ingredient: |
+            {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_preemergent'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_preemergent'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_preemergent'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_preemergent'), [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_preemergent'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_preemergent'), [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_preemergent'), {}).get('u', 'ml') }}
+      - name: "Insecticide Product Info"
+        unique_id: lawn_product_info_insecticide
+        state: |
+          {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_insecticide') %}
+          {% set method = states('input_select.lawn_app_method_insecticide') %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_insecticide') }}"
+          method: "{{ states('input_select.lawn_app_method_insecticide') }}"
+          active_ingredient: |
+            {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_insecticide'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_insecticide'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_insecticide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_insecticide'), [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_insecticide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_insecticide'), [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_insecticide'), {}).get('u', 'ml') }}
+      - name: "Fungicide Product Info"
+        unique_id: lawn_product_info_fungicide
+        state: |
+          {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_fungicide') %}
+          {% set method = states('input_select.lawn_app_method_fungicide') %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_fungicide') }}"
+          method: "{{ states('input_select.lawn_app_method_fungicide') }}"
+          active_ingredient: |
+            {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_fungicide'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_fungicide'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_fungicide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_fungicide'), [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_fungicide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_fungicide'), [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_fungicide'), {}).get('u', 'ml') }}
+      - name: "Herbicide Product Info"
+        unique_id: lawn_product_info_herbicide
+        state: |
+          {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_herbicide') %}
+          {% set method = states('input_select.lawn_app_method_herbicide') %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_herbicide') }}"
+          method: "{{ states('input_select.lawn_app_method_herbicide') }}"
+          active_ingredient: |
+            {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_herbicide'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_herbicide'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_herbicide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_herbicide'), [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_herbicide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_herbicide'), [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_herbicide'), {}).get('u', 'ml') }}
+      - name: "Plant Growth Regulator Product Info"
+        unique_id: lawn_product_info_pgr
+        state: |
+          {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+          {% set sel = states('input_select.lawn_product_db_pgr') %}
+          {% set method = 'Foliar Spray' %}
+          {% set p = db.get(sel, {}) %}
+          {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+          {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+          {% elif sel == 'Custom' %}Custom rate
+          {% else %}N/A for {{ method }}
+          {% endif %}
+        attributes:
+          product: "{{ states('input_select.lawn_product_db_pgr') }}"
+          method: "{{ 'Foliar Spray' }}"
+          active_ingredient: |
+            {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_pgr'), {}).get('a', '-') }}
+          notes: |
+            {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_pgr'), {}).get('t', '') }}
+          rate_low: |
+            {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_pgr'), {}) %}
+            {% set r = p.get('r', {}).get('Foliar Spray', [0,0]) if p else [0,0] %}
+            {{ r[0] }}
+          rate_high: |
+            {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_pgr'), {}) %}
+            {% set r = p.get('r', {}).get('Foliar Spray', [0,0]) if p else [0,0] %}
+            {{ r[1] }}
+          unit: |
+            {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_pgr'), {}).get('u', 'ml') }}
 
 # =============================================================================
 # SCRIPTS — Task Logging (with Inventory Auto-Deduct + Nitrogen Tracking)
@@ -2111,3 +2557,351 @@ automation:
             {% if states('sensor.lawn_avg_soil_moisture') != 'unavailable' %}
             Soil moisture: {{ states('sensor.lawn_avg_soil_moisture') }}%
             {% endif %}
+
+
+  # ── Product Database Auto-fill Automations ─────────────────────────────
+  # When you select a product, the rate, unit, and N-fraction auto-populate.
+  # Select 'Custom' to disable auto-fill and set your own values.
+
+  - id: lawn_product_autofill_kelp
+    alias: "Lawn: Auto-fill Kelp / Seaweed Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_kelp
+      - platform: state
+        entity_id: input_select.lawn_app_method_kelp
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_kelp') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_kelp
+        data:
+          value: >
+            {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_kelp'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_kelp'), [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_kelp') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_kelp
+        data:
+          option: >
+            {% set db = {'Seasol': {'r': {'Foliar': [30, 60], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Durvillaea + Ascophyllum extract', 't': 'Fortnightly during growing season. Compatible with most tank mixes.', 'n': 0}, 'Kelpak': {'r': {'Foliar': [20, 40], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Ecklonia maxima extract', 't': 'High auxin:cytokinin ratio. Promotes root development.', 'n': 0}, 'Eco-Aminogro': {'r': {'Foliar': [25, 50], 'Soil Drench': [50, 100]}, 'u': 'ml', 'a': 'Amino acids + seaweed', 't': 'Biostimulant with amino acids. Good tank mix partner.', 'n': 0}, 'Seasol PowerFeed': {'r': {'Foliar': [40, 80], 'Soil Drench': [80, 160]}, 'u': 'ml', 'a': 'Seaweed + NPK 12-1.4-7', 't': 'Combined seaweed + fertiliser. Counts as liquid fert too.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_kelp'), {}).get('u', 'ml') }}
+  - id: lawn_product_autofill_granular_fert
+    alias: "Lawn: Auto-fill Granular Fertiliser Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_granular_fert
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_granular_fert') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_granular_fert
+        data:
+          value: >
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_granular_fert'), {}) %}
+            {% set r = p.get('r', {}).get('Broadcast', [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_granular_fert') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_granular_fert
+        data:
+          option: >
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('u', 'ml') }}
+      - condition: template
+        value_template: >
+          {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+          {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('n', 0) > 0 }}
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_granular_fert_n_fraction
+        data:
+          value: >
+            {% set db = {'Scotts Lawn Builder All Purpose': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 23-2-4', 't': 'Slow-release 8-10 weeks. Apply with spreader.', 'n': 0.23}, 'Yates Buffalo Pro': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 16-2-6', 't': 'Safe on Buffalo/Sir Walter. Slow-release 12 weeks.', 'n': 0.16}, 'Baileys 3.1.1': {'r': {'Broadcast': [2.5, 5.0]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'WA-made. Contains trace elements. 8-10 week release.', 'n': 0.21}, 'Lawn Solutions Premium Fert': {'r': {'Broadcast': [2.5, 3.5]}, 'u': 'kg', 'a': 'NPK 18-1-13', 't': 'High potassium for wear tolerance. Slow-release.', 'n': 0.18}, 'Katek Super Growth': {'r': {'Broadcast': [3.0, 5.0]}, 'u': 'kg', 'a': 'NPK 8-3-6 organic', 't': 'Organic-based. Lower burn risk. Feeds soil biology.', 'n': 0.08}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('n', 0) }}
+  - id: lawn_product_autofill_liquid_fert
+    alias: "Lawn: Auto-fill Liquid Fertiliser Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_liquid_fert
+      - platform: state
+        entity_id: input_select.lawn_app_method_liquid_fert
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_liquid_fert') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_liquid_fert
+        data:
+          value: >
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_liquid_fert'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_liquid_fert'), [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_liquid_fert') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_liquid_fert
+        data:
+          option: >
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('u', 'ml') }}
+      - condition: template
+        value_template: >
+          {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+          {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('n', 0) > 0 }}
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_liquid_fert_n_fraction
+        data:
+          value: >
+            {% set db = {'PowerFeed LawnFeed': {'r': {'Foliar': [80, 160], 'Soil Drench': [160, 320]}, 'u': 'ml', 'a': 'NPK 12-1.4-7 + humic', 't': 'Contains fish + humic acid. Fortnightly.', 'n': 0.12}, 'Exceed Liquid 20-1-5': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 20-1-5', 't': 'High N liquid. Foliar uptake within hours. Weekly OK.', 'n': 0.2}, 'Lawn Solutions Launcher': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'NPK 24-2-8', 't': 'High analysis starter/maintenance liquid.', 'n': 0.24}, 'Yates Thrive Lawn Liquid': {'r': {'Foliar': [80, 150], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'NPK 12-2-5', 't': 'Budget option. Apply fortnightly in growing season.', 'n': 0.12}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} %}
+            {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('n', 0) }}
+  - id: lawn_product_autofill_humate
+    alias: "Lawn: Auto-fill Humate / Humic Acid Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_humate
+      - platform: state
+        entity_id: input_select.lawn_app_method_humate
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_humate') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_humate
+        data:
+          value: >
+            {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_humate'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_humate'), [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_humate') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_humate
+        data:
+          option: >
+            {% set db = {'Exceed Humate 12%': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid 12%', 't': 'Improves CEC in sandy soils. Monthly drench.', 'n': 0}, 'Lawn Solutions Lawn Rescue': {'r': {'Foliar': [100, 200], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'For stressed/recovering turf. Pairs well with kelp.', 'n': 0}, 'Carbon Mate': {'r': {'Foliar': [50, 100], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + fulvic blend', 't': 'Concentrated humate. Monthly application.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_humate'), {}).get('u', 'ml') }}
+  - id: lawn_product_autofill_soil_wetter
+    alias: "Lawn: Auto-fill Soil Wetter Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_soil_wetter
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_soil_wetter') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_soil_wetter
+        data:
+          value: >
+            {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_soil_wetter'), {}) %}
+            {% set r = p.get('r', {}).get('Soil Drench', [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_soil_wetter') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_soil_wetter
+        data:
+          option: >
+            {% set db = {'Seasol Super Soil Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant + seaweed', 't': 'Critical for Perth sand. Apply every 60-90 days in summer.', 'n': 0}, 'Yates Waterwise': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Non-ionic surfactant', 't': 'Budget soil wetter. Reapply every 8-12 weeks.', 'n': 0}, 'Lawn Solutions Lawn Soaker': {'r': {'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Surfactant blend', 't': 'Concentrated formula. Water in well after application.', 'n': 0}, 'Hydramaxx': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Polyether surfactant', 't': 'Professional grade. Long-lasting on sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_soil_wetter'), {}).get('u', 'ml') }}
+  - id: lawn_product_autofill_preemergent
+    alias: "Lawn: Auto-fill Pre-emergent Herbicide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_preemergent
+      - platform: state
+        entity_id: input_select.lawn_app_method_preemergent
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_preemergent') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_preemergent
+        data:
+          value: >
+            {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_preemergent'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_preemergent'), [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_preemergent') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_preemergent
+        data:
+          option: >
+            {% set db = {'Oxafert (Oxadiazon 2%)': {'r': {'Granular': [150, 300], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 20g/kg', 't': 'Granular only. Safe on all turf types. Apply before weed germination.', 'n': 0}, 'Barricade WG (Prodiamine)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 15]}, 'u': 'g', 'a': 'Prodiamine 750g/kg', 't': 'Liquid spray. 6-8 month control. Do NOT apply to new turf <3 months.', 'n': 0}, 'Specticle Flo (Indaziflam)': {'r': {'Granular': [0, 0], 'Liquid Spray': [5, 10]}, 'u': 'ml', 'a': 'Indaziflam 200g/L', 't': 'Liquid spray. 6-12 month residual. Very low rate.', 'n': 0}, 'Onset 10GR (Oxadiazon)': {'r': {'Granular': [200, 400], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Oxadiazon 100g/kg', 't': 'Granular. Spread evenly with a rotary spreader. Water in lightly.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_preemergent'), {}).get('u', 'ml') }}
+  - id: lawn_product_autofill_insecticide
+    alias: "Lawn: Auto-fill Insecticide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_insecticide
+      - platform: state
+        entity_id: input_select.lawn_app_method_insecticide
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_insecticide') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_insecticide
+        data:
+          value: >
+            {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_insecticide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_insecticide'), [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_insecticide') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_insecticide
+        data:
+          option: >
+            {% set db = {'Acelepryn GR': {'r': {'Granular': [130, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Granular. 6-month control of grubs, caterpillars, billbug. Water in.', 'n': 0}, 'Acelepryn SC': {'r': {'Granular': [0, 0], 'Liquid Spray': [15, 30]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Liquid spray. Same AI as GR. 3-6 month control. Low toxicity to bees.', 'n': 0}, 'Battle Insecticide': {'r': {'Granular': [0, 0], 'Liquid Spray': [20, 40]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Broad-spectrum. Controls ants, grubs, mites. Apply late afternoon.', 'n': 0}, 'Yates Grub Kill and Protect': {'r': {'Granular': [150, 200], 'Liquid Spray': [0, 0]}, 'u': 'g', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Consumer granular. Spread evenly and water in well.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_insecticide'), {}).get('u', 'ml') }}
+  - id: lawn_product_autofill_fungicide
+    alias: "Lawn: Auto-fill Fungicide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_fungicide
+      - platform: state
+        entity_id: input_select.lawn_app_method_fungicide
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_fungicide') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_fungicide
+        data:
+          value: >
+            {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_fungicide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_fungicide'), [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_fungicide') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_fungicide
+        data:
+          option: >
+            {% set db = {'Dedicate (Tebuconazole)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 40]}, 'u': 'ml', 'a': 'Tebuconazole 200g/L', 't': 'Systemic triazole. Brown patch, dollar spot, spring dead spot.', 'n': 0}, 'Heritage Maxx (Azoxystrobin)': {'r': {'Foliar Spray': [10, 20], 'Curative Drench': [20, 30]}, 'u': 'ml', 'a': 'Azoxystrobin 200g/L', 't': 'Strobilurin. Preventative + curative. 14-21 day intervals.', 'n': 0}, 'Bumper (Propiconazole)': {'r': {'Foliar Spray': [10, 25], 'Curative Drench': [25, 50]}, 'u': 'ml', 'a': 'Propiconazole 250g/L', 't': 'Systemic triazole. Rotate with strobilurins to prevent resistance.', 'n': 0}, 'Headway Maxx': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [30, 45]}, 'u': 'ml', 'a': 'Azoxystrobin + Propiconazole', 't': 'Dual AI protectant and curative. Premium broad-spectrum.', 'n': 0}, 'Mancozeb 750WG': {'r': {'Foliar Spray': [20, 30], 'Curative Drench': [0, 0]}, 'u': 'g', 'a': 'Mancozeb 750g/kg', 't': 'Contact protectant only. Use as rotation partner. Avoid heat >30C.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Curative Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_fungicide'), {}).get('u', 'ml') }}
+  - id: lawn_product_autofill_herbicide
+    alias: "Lawn: Auto-fill Herbicide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_herbicide
+      - platform: state
+        entity_id: input_select.lawn_app_method_herbicide
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_herbicide') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_herbicide
+        data:
+          value: >
+            {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_herbicide'), {}) %}
+            {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_herbicide'), [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_herbicide') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_herbicide
+        data:
+          option: >
+            {% set db = {'Bow and Arrow': {'r': {'Foliar Spray': [30, 80], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA 340g/L + Bromoxynil 60g/L', 't': 'Broadleaf. Safe on couch, kikuyu, buffalo. Do NOT mow 3 days before/after.', 'n': 0}, 'Kamba M': {'r': {'Foliar Spray': [30, 70], 'Spot Spray': [3, 5]}, 'u': 'ml', 'a': 'Dicamba 20g/L + MCPA 340g/L', 't': 'Broadleaf. Clover, bindii, cape weed. Avoid heat >28C.', 'n': 0}, 'Sedgehammer': {'r': {'Foliar Spray': [1, 2], 'Spot Spray': [0.5, 1]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Nutgrass/sedge specialist. Add surfactant. 2 apps 6 weeks apart.', 'n': 0}, 'Monument (Trifloxysulfuron)': {'r': {'Foliar Spray': [0.5, 1], 'Spot Spray': [0.3, 0.5]}, 'u': 'g', 'a': 'Trifloxysulfuron 750g/kg', 't': 'Sedge + some broadleaf. Couch only — will damage buffalo/kikuyu.', 'n': 0}, 'Destiny (Clethodim)': {'r': {'Foliar Spray': [20, 50], 'Spot Spray': [5, 10]}, 'u': 'ml', 'a': 'Clethodim 240g/L', 't': 'Grass-selective. Removes winter grass from buffalo/kikuyu. NOT for couch.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_herbicide'), {}).get('u', 'ml') }}
+  - id: lawn_product_autofill_pgr
+    alias: "Lawn: Auto-fill Plant Growth Regulator Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_pgr
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_pgr') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_pgr
+        data:
+          value: >
+            {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {% set p = db.get(states('input_select.lawn_product_db_pgr'), {}) %}
+            {% set r = p.get('r', {}).get('Foliar Spray', [0,0]) if p else [0,0] %}
+            {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_pgr') }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_pgr
+        data:
+          option: >
+            {% set db = {'Primo MAXX': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Industry standard PGR. 200 GDD reapplication. Apply on dry leaf, water in next day.', 'n': 0}, 'T-Nex 1L': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Generic Primo equivalent. Same rates and GDD target.', 'n': 0}, 'Moddus Evo': {'r': {'Foliar Spray': [5, 10]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 250g/L', 't': 'Higher concentration — use HALF the Primo rate. Same GDD target.', 'n': 0}, 'Qualipro T-Nex': {'r': {'Foliar Spray': [10, 20]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Budget generic. Same AI concentration as Primo MAXX.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} %}
+            {{ db.get(states('input_select.lawn_product_db_pgr'), {}).get('u', 'ml') }}
+
+
+  # ── First-Run Default Setter ──────────────────────────────────────────
+  # Runs once on HA start. If all product toggles are off (fresh install),
+  # enables all products and notifications so the dashboard isn't empty.
+  # Safe on subsequent restarts — skips if ANY toggle is already on.
+  - id: lawn_first_run_defaults
+    alias: "Lawn: First-Run Default Setter"
+    trigger:
+      - platform: homeassistant
+        event: start
+    condition:
+      - condition: template
+        value_template: |
+          {% set toggles = [
+            'input_boolean.lawn_product_mowing',
+            'input_boolean.lawn_product_kelp',
+            'input_boolean.lawn_product_pgr',
+            'input_boolean.lawn_product_granular_fert',
+            'input_boolean.lawn_product_liquid_fert',
+            'input_boolean.lawn_product_humate',
+            'input_boolean.lawn_product_soil_wetter',
+            'input_boolean.lawn_product_preemergent',
+            'input_boolean.lawn_product_insecticide',
+            'input_boolean.lawn_product_fungicide',
+            'input_boolean.lawn_product_herbicide'
+          ] %}
+          {{ toggles | map('states') | select('eq', 'on') | list | length == 0 }}
+    action:
+      - action: input_boolean.turn_on
+        target:
+          entity_id:
+            - input_boolean.lawn_product_mowing
+            - input_boolean.lawn_product_kelp
+            - input_boolean.lawn_product_pgr
+            - input_boolean.lawn_product_granular_fert
+            - input_boolean.lawn_product_liquid_fert
+            - input_boolean.lawn_product_humate
+            - input_boolean.lawn_product_soil_wetter
+            - input_boolean.lawn_product_preemergent
+            - input_boolean.lawn_product_insecticide
+            - input_boolean.lawn_product_fungicide
+            - input_boolean.lawn_product_herbicide
+            - input_boolean.lawn_notify_mowing
+            - input_boolean.lawn_notify_kelp
+            - input_boolean.lawn_notify_granular_fert
+            - input_boolean.lawn_notify_liquid_fert
+            - input_boolean.lawn_notify_humate
+            - input_boolean.lawn_notify_soil_wetter
+            - input_boolean.lawn_notify_preemergent
+            - input_boolean.lawn_notify_insecticide
+            - input_boolean.lawn_notify_fungicide
+            - input_boolean.lawn_notify_herbicide
+            - input_boolean.lawn_notify_pgr
+            - input_boolean.lawn_notify_low_stock
+            - input_boolean.lawn_notify_irrigation
