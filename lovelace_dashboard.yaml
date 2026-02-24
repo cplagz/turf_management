@@ -934,6 +934,261 @@ views:
         cards:
           - type: markdown
             content: |
+              ## 📐 Lawn Areas
+              Set unused areas to 0m² to hide them
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            title: Area Configuration
+            show_header_toggle: false
+            entities:
+              - entity: input_text.lawn_area_1_name
+              - entity: input_number.lawn_area_1_size
+              - entity: input_text.lawn_area_2_name
+              - entity: input_number.lawn_area_2_size
+              - entity: input_text.lawn_area_3_name
+              - entity: input_number.lawn_area_3_size
+              - entity: input_text.lawn_area_4_name
+              - entity: input_number.lawn_area_4_size
+              - entity: input_text.lawn_area_5_name
+              - entity: input_number.lawn_area_5_size
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-weight: 700
+                !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🔔 Notification Settings
+              Enable or disable task reminders
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            show_header_toggle: true
+            entities:
+              - entity: input_boolean.lawn_notify_mowing
+                name: Mowing Reminders
+              - entity: input_boolean.lawn_notify_kelp
+                name: Kelp Reminders
+              - entity: input_boolean.lawn_notify_granular_fert
+                name: Granular Fert Reminders
+              - entity: input_boolean.lawn_notify_liquid_fert
+                name: Liquid Fert Reminders
+              - entity: input_boolean.lawn_notify_humate
+                name: Humate Reminders
+              - entity: input_boolean.lawn_notify_soil_wetter
+                name: Soil Wetter Reminders
+              - entity: input_boolean.lawn_notify_preemergent
+                name: Pre-emergent Reminders
+              - entity: input_boolean.lawn_notify_insecticide
+                name: Insecticide Reminders
+              - entity: input_boolean.lawn_notify_fungicide
+                name: Fungicide Reminders
+              - entity: input_boolean.lawn_notify_herbicide
+                name: Herbicide Reminders
+              - entity: input_boolean.lawn_notify_pgr
+                name: PGR Reminders
+              - entity: input_boolean.lawn_notify_low_stock
+                name: Low Stock Alerts
+              - entity: input_boolean.lawn_notify_irrigation
+                name: Irrigation Suggestions
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## ⏱️ Task Intervals (Days)
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_number.lawn_interval_mowing
+              - entity: input_number.lawn_interval_kelp
+              - entity: input_number.lawn_interval_granular_fert
+              - entity: input_number.lawn_interval_liquid_fert
+              - entity: input_number.lawn_interval_humate
+              - entity: input_number.lawn_interval_soil_wetter
+              - entity: input_number.lawn_interval_preemergent
+              - entity: input_number.lawn_interval_insecticide
+              - entity: input_number.lawn_interval_fungicide
+              - entity: input_number.lawn_interval_herbicide
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🌱 GDD / PGR Settings
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_number.pgr_gdd_target
+              - entity: input_number.pgr_gdd_accumulated
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🚿 Irrigation Settings
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_number.lawn_sprinkler_precip_rate
+              - entity: input_number.lawn_moisture_threshold
+              - entity: input_number.lawn_stock_alert_threshold
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🧪 Nitrogen Tracking
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase; color: #4aa35b !important; margin: 0
+                0 8px 0 !important; }
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: input_number.lawn_nitrogen_applied_season
+              - entity: input_number.lawn_granular_fert_n_fraction
+              - entity: input_number.lawn_liquid_fert_n_fraction
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+          - type: custom:mushroom-template-card
+            primary: Reset Seasonal N Counter
+            secondary: >-
+              Current: {{ states('input_number.lawn_nitrogen_applied_season') }} kg N
+            icon: mdi:atom-variant
+            icon_color: red
+            tap_action:
+              action: perform-action
+              perform_action: script.lawn_reset_nitrogen_season
+              confirmation:
+                text: Reset seasonal nitrogen counter to zero?
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+                .primary { color: #e8f5eb !important; font-weight: 600 !important; }
+                .secondary { color: #8fb89a !important; font-family: monospace !important; }
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VIEW 3: SEASON REVIEW (NEW)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Requires: custom:apexcharts-card (HACS) for the dual-axis chart.
+  # The statistics-graph card is built-in and works without HACS.
+  - title: Products
+    path: products
+    icon: mdi:flask-outline
+    badges: []
+    type: masonry
+    theme: Mushroom
+    background:
+      opacity: 100
+      alignment: center
+      size: cover
+      repeat: no-repeat
+      attachment: fixed
+      image:
+        media_content_id: /local/turf_bg.svg
+        media_content_type: ''
+        metadata:
+          navigateIds:
+            - {}
+            - media_content_type: ''
+              media_content_id: __MANUAL_ENTRY__
+    card_mod:
+      style:
+        .: |
+          :host {
+            --primary-background-color: #0e1614;
+            --secondary-background-color: #162019;
+            --card-background-color: #1c2b22;
+            --primary-text-color: #e8f5eb;
+            --secondary-text-color: #8fb89a;
+            --primary-color: #4aa35b;
+            --accent-color: #6fcf80;
+          }
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
               ## 🧪 Enabled Products
               Toggle products on/off to show or hide them from the Dashboard and Inventory views. Disabled products also suppress their reminders.
             card_mod:
@@ -987,6 +1242,31 @@ views:
                 box-shadow: none !important; }
 
                 hui-generic-entity-row { color: #e8f5eb !important; }
+          - type: markdown
+            content: |
+              ### ➕ Adding a New Product
+              To add a commercial product to a category, edit **lawn_care.yaml** in two places:
+              1. **input_select.lawn_product_db_&lt;category&gt;** — add the product name to the `options:` list (before "Custom")
+              2. **sensor.lawn_db_&lt;category&gt;** — add the product entry to the `products` attribute dict
+
+              Each product entry follows this format:
+              ```
+              'Product Name': {
+                'r': {'Method': [low, high]},
+                'u': 'ml',  'a': 'Active ingredient',
+                't': 'Notes',  'n': 0.0
+              }
+              ```
+              The rate, unit, and N-fraction auto-fill when you select the product. See README for full guide.
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                h3 { color: #6fcf80 !important; font-weight: 700 !important; }
+
+                p, li, code { color: #e8f5eb !important; font-size: 12px !important; }
       - type: vertical-stack
         cards:
           - type: markdown
@@ -1150,94 +1430,6 @@ views:
         cards:
           - type: markdown
             content: |
-              ## 📐 Lawn Areas
-              Set unused areas to 0m² to hide them
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            title: Area Configuration
-            show_header_toggle: false
-            entities:
-              - entity: input_text.lawn_area_1_name
-              - entity: input_number.lawn_area_1_size
-              - entity: input_text.lawn_area_2_name
-              - entity: input_number.lawn_area_2_size
-              - entity: input_text.lawn_area_3_name
-              - entity: input_number.lawn_area_3_size
-              - entity: input_text.lawn_area_4_name
-              - entity: input_number.lawn_area_4_size
-              - entity: input_text.lawn_area_5_name
-              - entity: input_number.lawn_area_5_size
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                .card-header { color: #6fcf80 !important; font-weight: 700
-                !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## 🔔 Notification Settings
-              Enable or disable task reminders
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            show_header_toggle: true
-            entities:
-              - entity: input_boolean.lawn_notify_mowing
-                name: Mowing Reminders
-              - entity: input_boolean.lawn_notify_kelp
-                name: Kelp Reminders
-              - entity: input_boolean.lawn_notify_granular_fert
-                name: Granular Fert Reminders
-              - entity: input_boolean.lawn_notify_liquid_fert
-                name: Liquid Fert Reminders
-              - entity: input_boolean.lawn_notify_humate
-                name: Humate Reminders
-              - entity: input_boolean.lawn_notify_soil_wetter
-                name: Soil Wetter Reminders
-              - entity: input_boolean.lawn_notify_preemergent
-                name: Pre-emergent Reminders
-              - entity: input_boolean.lawn_notify_insecticide
-                name: Insecticide Reminders
-              - entity: input_boolean.lawn_notify_fungicide
-                name: Fungicide Reminders
-              - entity: input_boolean.lawn_notify_herbicide
-                name: Herbicide Reminders
-              - entity: input_boolean.lawn_notify_pgr
-                name: PGR Reminders
-              - entity: input_boolean.lawn_notify_low_stock
-                name: Low Stock Alerts
-              - entity: input_boolean.lawn_notify_irrigation
-                name: Irrigation Suggestions
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
               ## 💧 Application Rates
               Rate per 100m² — unit set in Product Units above
             card_mod:
@@ -1268,140 +1460,7 @@ views:
                 box-shadow: none !important; }
 
                 hui-generic-entity-row { color: #e8f5eb !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## ⏱️ Task Intervals (Days)
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
 
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: input_number.lawn_interval_mowing
-              - entity: input_number.lawn_interval_kelp
-              - entity: input_number.lawn_interval_granular_fert
-              - entity: input_number.lawn_interval_liquid_fert
-              - entity: input_number.lawn_interval_humate
-              - entity: input_number.lawn_interval_soil_wetter
-              - entity: input_number.lawn_interval_preemergent
-              - entity: input_number.lawn_interval_insecticide
-              - entity: input_number.lawn_interval_fungicide
-              - entity: input_number.lawn_interval_herbicide
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## 🌱 GDD / PGR Settings
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: input_number.pgr_gdd_target
-              - entity: input_number.pgr_gdd_accumulated
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## 🚿 Irrigation Settings
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: input_number.lawn_sprinkler_precip_rate
-              - entity: input_number.lawn_moisture_threshold
-              - entity: input_number.lawn_stock_alert_threshold
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## 🧪 Nitrogen Tracking
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: input_number.lawn_nitrogen_applied_season
-              - entity: input_number.lawn_granular_fert_n_fraction
-              - entity: input_number.lawn_liquid_fert_n_fraction
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-          - type: custom:mushroom-template-card
-            primary: Reset Seasonal N Counter
-            secondary: >-
-              Current: {{ states('input_number.lawn_nitrogen_applied_season') }} kg N
-            icon: mdi:atom-variant
-            icon_color: red
-            tap_action:
-              action: perform-action
-              perform_action: script.lawn_reset_nitrogen_season
-              confirmation:
-                text: Reset seasonal nitrogen counter to zero?
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-                .primary { color: #e8f5eb !important; font-weight: 600 !important; }
-                .secondary { color: #8fb89a !important; font-family: monospace !important; }
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # VIEW 3: SEASON REVIEW (NEW)
-  # ═══════════════════════════════════════════════════════════════════════════
-  # Requires: custom:apexcharts-card (HACS) for the dual-axis chart.
-  # The statistics-graph card is built-in and works without HACS.
   - title: Season Review
     path: season
     icon: mdi:chart-areaspline
