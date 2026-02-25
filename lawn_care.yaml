@@ -1,13 +1,3367 @@
-# macOS
-.DS_Store
+# =============================================================================
+# Perth Turf Management System v3.7.0 — Home Assistant Package
+# Save as: config/packages/lawn_care.yaml
+#
+# v3.7.0:
+# ✓ CRITICAL FIX: Jinja2 TemplateSyntaxError — apostrophes in product names
+#   (e.g. "Ralphy's") now double-quoted to avoid breaking Jinja2 dict parsing
+# ✓ FIX: Product Details card showing unknown/None (caused by above Jinja2 error)
+# ✓ FIX: Product Details card missing line breaks — added <br> tags between
+#   product name and AI/Notes lines in dashboard markdown card
+# ✓ Full product/rate refresh from master CSV (106 products across 10 categories)
+# ✓ Added 21 new products: Baileys (SG Maintain/Elite/Renovate, Turfect Energy/
+#   Rapid Green/Green Plus/Humic, Energy Max, 3.1.1 Granulated), Plant Doctor
+#   (Seaweed Secrets, Liquid Iron, Max Green, Stimulizer, Humic Acid Powder,
+#   Activ8mate, Nature Soils Wetter), Floratine (Knife Plus, Propel, Retain Pro),
+#   Eco Growth Eco Vital, Ralphy's Unleash
+# ✓ Split "Baileys 3.1.1" → "Baileys 3.1.1 Grosorb" (3kg) + "Baileys 3.1.1
+#   Granulated" (2.5kg)
+# ✓ Rate corrections per CSV: NitroKelp 150-300, Seacharge 100, Refresh 50-100,
+#   Eco Wet 150-200, Eco Humate 200, Quantum H 50-75, Emerald 2.5, 4.1.1 1.5-3
+#
+# v3.6.0:
+# ✓ Added 16 Billy Goat Lawns / PGF / ICL / Lawn Juice / Sacoa products
+# ✓ Updated NitroKelp rate from [150-300] to [200-400] per Billy Goat Lawns
+# ✓ Total database: 85 products across 10 categories
+#
+# v3.5.0:
+# ✓ Replaced entire product database — 69 Australian turf products across 10 categories
+# ✓ Insecticide methods updated: Granular, Foliar Spray, Soil Drench
+#
+# v3.4.0:
+# ✓ UI-editable custom products — 30 input_text entities for name, AI, notes per category
+# ✓ Conditional custom product cards appear in Products view when "Custom" selected
+# ✓ Product info sensors read from custom fields when Custom is active
+#
+# v3.3.0:
+# ✓ Refactored product database to single-source-of-truth architecture
+# ✓ Each category's product dict defined ONCE in a lawn_db_* sensor
+# ✓ All consumers (info sensors, autofill automations) use state_attr()
+# ✓ Adding a product = edit 1 dict + 1 input_select options list
+#
+# v3.2.1:
+# ✓ Removed all initial: keys — entity values now persist across HA restarts
+#
+# v3.2.0:
+# ✓ Product Database — 52 Australian turf products across 10 categories
+# ✓ Auto-fill rates, units, and N-fraction on product selection
+# ✓ Application method selectors (Foliar/Soil Drench/Granular/Spot Spray)
+# ✓ Product info sensors with AI, notes, and rate ranges per method
+# ✓ Dashboard task cards show selected product name
+#
+# v3.1.0:
+# ✓ Product enable/disable toggles (input_boolean.lawn_product_*)
+# ✓ Per-product unit selectors — ml / g / L / kg (input_select.lawn_unit_*)
+# ✓ "N/A" for never-logged products (replaces 01-Jan-70)
+#
+# v3.0.x:
+# ✓ Inventory tracking, ET₀ irrigation, soil moisture, nitrogen tracking
+# ✓ Season Review dashboard, all HA 2024.8+ migrations
+# ✓ All Jinja2 blocks use literal scalar (|)
+# =============================================================================
 
-# IDEs
-.vscode/
-.idea/
+# =============================================================================
+# 🔧 USER CONFIGURATION — EDIT THESE THREE LINES FOR YOUR SETUP
+# =============================================================================
+#
+# IMPORTANT: Unlike v2.1, anchors are NO LONGER used inside Jinja2 templates.
+# Edit the three values below. Then do a GLOBAL find-and-replace for
+# the corresponding entity IDs if you use different sensors:
+#
+#   Temperature sensor  → sensor.weatherflow_sensors_temperature
+#   Notify service      → notify.mobile_app_marcs_iphone
+#   Weather forecast    → weather.weatherflow_forecast_home
+#
+# (Search for "# ⚙️ USER-CONFIG" comments throughout this file to locate
+#  all hardcoded references that need changing for your setup.)
+# =============================================================================
 
-# Python
-__pycache__/
-*.pyc
+homeassistant:
+  customize:
+    sensor.lawn_gdd_today:
+      friendly_name: "Today's GDD"
+      icon: mdi:thermometer-lines
 
-# Archives
-*.zip
+    # Anchors — used ONLY for entity_id references in trigger/target blocks
+    # (never inside Jinja2 {{ }} template strings)
+    package.lawn_temp_sensor: &temp_sensor sensor.weatherflow_sensors_temperature
+    package.lawn_notify_service: &notify_service notify.mobile_app_marcs_iphone
+    package.lawn_weather: &weather_forecast weather.weatherflow_forecast_home
+
+    # Give device_class to input_numbers so they graph properly
+    # (eliminates the need for wrapper template sensors)
+    input_number.lawn_temp_daily_max:
+      device_class: temperature
+      state_class: measurement
+    input_number.lawn_temp_daily_min:
+      device_class: temperature
+      state_class: measurement
+
+# =============================================================================
+# INPUT BOOLEAN — Notification Toggles
+# =============================================================================
+
+input_boolean:
+  lawn_notify_mowing:
+    name: "Notify: Mowing"
+    icon: mdi:bell-ring
+  lawn_notify_kelp:
+    name: "Notify: Kelp"
+    icon: mdi:bell-ring
+  lawn_notify_granular_fert:
+    name: "Notify: Granular Fert"
+    icon: mdi:bell-ring
+  lawn_notify_liquid_fert:
+    name: "Notify: Liquid Fert"
+    icon: mdi:bell-ring
+  lawn_notify_humate:
+    name: "Notify: Humate"
+    icon: mdi:bell-ring
+  lawn_notify_soil_wetter:
+    name: "Notify: Soil Wetter"
+    icon: mdi:bell-ring
+  lawn_notify_preemergent:
+    name: "Notify: Pre-emergent"
+    icon: mdi:bell-ring
+  lawn_notify_insecticide:
+    name: "Notify: Insecticide"
+    icon: mdi:bell-ring
+  lawn_notify_fungicide:
+    name: "Notify: Fungicide"
+    icon: mdi:bell-ring
+  lawn_notify_herbicide:
+    name: "Notify: Herbicide"
+    icon: mdi:bell-ring
+  lawn_notify_pgr:
+    name: "Notify: PGR"
+    icon: mdi:bell-ring
+  lawn_notify_low_stock:
+    name: "Notify: Low Stock"
+    icon: mdi:bell-alert
+  lawn_notify_irrigation:
+    name: "Notify: Irrigation"
+    icon: mdi:bell-ring
+
+  # ── Product Enable/Disable Toggles ──────────────────────────────────────
+  # Turn these off to hide a product from the Dashboard, Inventory, and
+  # suppress its reminder notifications entirely.
+
+  lawn_product_mowing:
+    name: "Product: Mowing"
+    icon: mdi:mower-on
+  lawn_product_kelp:
+    name: "Product: Kelp"
+    icon: mdi:seed
+  lawn_product_granular_fert:
+    name: "Product: Granular Fert"
+    icon: mdi:shaker-outline
+  lawn_product_liquid_fert:
+    name: "Product: Liquid Fert"
+    icon: mdi:water-circle
+  lawn_product_humate:
+    name: "Product: Humate"
+    icon: mdi:cup-water
+  lawn_product_soil_wetter:
+    name: "Product: Soil Wetter"
+    icon: mdi:water-percent
+  lawn_product_preemergent:
+    name: "Product: Pre-emergent"
+    icon: mdi:shield-bug
+  lawn_product_insecticide:
+    name: "Product: Insecticide"
+    icon: mdi:bug-outline
+  lawn_product_fungicide:
+    name: "Product: Fungicide"
+    icon: mdi:mushroom-outline
+  lawn_product_herbicide:
+    name: "Product: Herbicide"
+    icon: mdi:sprout-outline
+  lawn_product_pgr:
+    name: "Product: PGR"
+    icon: mdi:expansion-card-variant
+
+
+# =============================================================================
+# INPUT SELECT — Lawn Type
+# =============================================================================
+
+input_select:
+  lawn_type:
+    name: Lawn Type
+    options:
+      - "Cool Season (C3)"
+      - "Warm Season (C4)"
+      - "Bermuda"
+      - "Kikuyu"
+      - "Buffalo"
+    icon: mdi:grass
+
+  # ── Product Unit Selectors ────────────────────────────────────────────
+  # Sets the unit for both application rate (/100m²) and stock level.
+  # Change these when switching between liquid and granular form of a product.
+
+  lawn_unit_kelp:
+    name: "Kelp Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_granular_fert:
+    name: "Granular Fert Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_liquid_fert:
+    name: "Liquid Fert Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_humate:
+    name: "Humate Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_soil_wetter:
+    name: "Soil Wetter Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_preemergent:
+    name: "Pre-emergent Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_insecticide:
+    name: "Insecticide Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_fungicide:
+    name: "Fungicide Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_herbicide:
+    name: "Herbicide Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+  lawn_unit_pgr:
+    name: "PGR Unit"
+    options:
+      - "ml"
+      - "g"
+      - "L"
+      - "kg"
+    icon: mdi:scale-balance
+
+
+  # ── Product Database Selectors ─────────────────────────────────────────
+  # Select a commercial product to auto-fill application rates.
+  # Change to 'Custom' to use your own rates.
+
+  lawn_product_db_kelp:
+    name: "Kelp / Seaweed Product"
+    options:
+      - "LawnPride Kelpxtra"
+      - "Fertech Kelpro"
+      - "Lawn Juice NitroKelp"
+      - "Ralphy's Seacharge"
+      - "Plant Doctor Seaweed Secrets"
+      - "LawnPride Rootmaxx"
+      - "Eco Growth Eco Vital"
+      - "Plant Doctor Activ8mate"
+      - "Lawn Juice Kelp Guard+"
+      - "PGF SeaGreen Kelp"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_kelp:
+    name: "Kelp / Seaweed Method"
+    options:
+      - "Foliar"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_granular_fert:
+    name: "Granular Fertiliser Product"
+    options:
+      - "LawnPride Groturf 15-4-11"
+      - "LawnPride Maintain 26-1-9"
+      - "LawnPride Maintain Mini"
+      - "LawnPride Turfmaxx 19-1-16"
+      - "LawnPride Organomaxx 3-1-2"
+      - "Terralift TX10 5-2-8"
+      - "2Spec Accelerate"
+      - "2Spec Elevate"
+      - "2Spec Endurance"
+      - "2Spec Origin Mini"
+      - "Baileys SureGreen Profile Mini"
+      - "Baileys 3.1.1 Grosorb"
+      - "Baileys 3.1.1 Granulated"
+      - "Baileys Brilliance"
+      - "Baileys 4.1.1"
+      - "Baileys SG Maintain"
+      - "Baileys SG Elite"
+      - "Baileys SG Renovate"
+      - "Baileys Turfect Energy"
+      - "Baileys Energy Max"
+      - "Eco Prime Emerald"
+      - "Eco Prime Emerald Mini"
+      - "Eco Prime Purple / Red"
+      - "Ralphy's All Rounder"
+      - "Troforte Fert-O-Lawn"
+      - "Simplot NFLEXX"
+      - "Baileys SureGreen Gold"
+      - "Lawn Juice RoyalGreen"
+      - "Lawn Juice RoyalGreen Mini"
+      - "ICL ProTurf NPK"
+      - "ICL ProTurf HI N"
+      - "Custom"
+    icon: mdi:database
+  lawn_product_db_liquid_fert:
+    name: "Liquid Fertiliser Product"
+    options:
+      - "LawnPride Greenxtra"
+      - "Ralphy's Showtime"
+      - "Baileys Turfect Rapid Green"
+      - "Baileys Turfect Green Plus"
+      - "Plant Doctor Liquid Iron"
+      - "Plant Doctor Max Green"
+      - "Floratine Knife Plus"
+      - "Baileys Turfect Lawn Green"
+      - "Ralphy's Complete NPK"
+      - "Lawn Juice Vigorous Growth+"
+      - "LawnPride Tracemaxx"
+      - "PGF Green Machine"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_liquid_fert:
+    name: "Liquid Fertiliser Method"
+    options:
+      - "Foliar"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_humate:
+    name: "Humate / Humic Acid Product"
+    options:
+      - "Plant Doctor Stimulizer"
+      - "Plant Doctor Quantum H"
+      - "Baileys Turfect Humic"
+      - "Eco Growth Eco Humate"
+      - "Ralphy's Unleash"
+      - "UMX Liquid (Humic & Fulvic)"
+      - "Plant Doctor Humic Acid Powder"
+      - "Humate Granules (Leonardite)"
+      - "Lawn Juice Thrive"
+      - "PGF Carbon King"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_humate:
+    name: "Humate / Humic Acid Method"
+    options:
+      - "Foliar"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_soil_wetter:
+    name: "Soil Wetter Product"
+    options:
+      - "LawnPride Hydramaxx"
+      - "LawnPride Hydramaxx G"
+      - "Ralphy's Refresh"
+      - "Ralphy's Flush"
+      - "Hydrolink Retain"
+      - "Hydrolink Advance"
+      - "Polywet Hold"
+      - "Eco Wet Liquid"
+      - "Eco Wet Granular"
+      - "Baileys Grosorb Granular"
+      - "Floratine Propel"
+      - "Plant Doctor Nature Soils Wetter"
+      - "Floratine Retain Pro"
+      - "PCT Reactor Wetter 600"
+      - "Sacoa BioWett Premium"
+      - "Lawn Juice Hydrate"
+      - "ICL H2Pro TriSmart"
+      - "Custom"
+    icon: mdi:database
+  lawn_product_db_preemergent:
+    name: "Pre-emergent Herbicide Product"
+    options:
+      - "Oxafert 16-2-6"
+      - "Turf Culture Spartan"
+      - "Barricade"
+      - "Indigo Onset 10GR"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_preemergent:
+    name: "Pre-emergent Herbicide Method"
+    options:
+      - "Granular"
+      - "Foliar Spray"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_insecticide:
+    name: "Insecticide Product"
+    options:
+      - "Acelepryn GR"
+      - "Acelepryn Liquid"
+      - "Quarterback"
+      - "Turf Culture Monarch G"
+      - "Surefire Fipronil Granular"
+      - "Proforce Rumbler 100SC"
+      - "Surefire Fivestar"
+      - "Echelon Duo"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_insecticide:
+    name: "Insecticide Method"
+    options:
+      - "Granular"
+      - "Foliar Spray"
+      - "Soil Drench"
+    icon: mdi:spray
+  lawn_product_db_fungicide:
+    name: "Fungicide Product"
+    options:
+      - "Impala"
+      - "Adama Bumper 625"
+      - "Dedicate Turf Fungicide"
+      - "Chlortan 1040"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_fungicide:
+    name: "Fungicide Method"
+    options:
+      - "Foliar Spray"
+      - "Curative Drench"
+    icon: mdi:spray
+  lawn_product_db_herbicide:
+    name: "Herbicide Product"
+    options:
+      - "Bow and Arrow"
+      - "Indigo Contra M Duo"
+      - "Cannonade 212"
+      - "Crabgrass & Clover Killer"
+      - "Halo-Force 750WG"
+      - "Envu Tribute"
+      - "Poa Chek"
+      - "Fusilade Forte"
+      - "Custom"
+    icon: mdi:database
+  lawn_app_method_herbicide:
+    name: "Herbicide Method"
+    options:
+      - "Foliar Spray"
+      - "Spot Spray"
+    icon: mdi:spray
+  lawn_product_db_pgr:
+    name: "Plant Growth Regulator Product"
+    options:
+      - "Astro 120 ME"
+      - "LawnPride Colourmaxx"
+      - "Custom"
+    icon: mdi:database
+
+# =============================================================================
+# INPUT NUMBER — Lawn Areas, Rates, Intervals, GDD, Inventory, Irrigation
+# =============================================================================
+
+input_number:
+
+  # ── Lawn Areas (5 configurable) ──────────────────────────────────────────
+
+  lawn_area_1_size:
+    name: "Area 1: Size"
+    min: 0
+    max: 1000
+    step: 1
+    unit_of_measurement: "m²"
+    icon: mdi:texture-box
+    mode: box
+
+  lawn_area_2_size:
+    name: "Area 2: Size"
+    min: 0
+    max: 1000
+    step: 1
+    unit_of_measurement: "m²"
+    icon: mdi:texture-box
+    mode: box
+
+  lawn_area_3_size:
+    name: "Area 3: Size"
+    min: 0
+    max: 1000
+    step: 1
+    unit_of_measurement: "m²"
+    icon: mdi:texture-box
+    mode: box
+
+  lawn_area_4_size:
+    name: "Area 4: Size"
+    min: 0
+    max: 1000
+    step: 1
+    unit_of_measurement: "m²"
+    icon: mdi:texture-box
+    mode: box
+
+  lawn_area_5_size:
+    name: "Area 5: Size"
+    min: 0
+    max: 1000
+    step: 1
+    unit_of_measurement: "m²"
+    icon: mdi:texture-box
+    mode: box
+
+  # ── Application Rates (per 100m²) ───────────────────────────────────────
+
+  lawn_rate_granular_fert:
+    name: Granular Fertiliser Rate
+    min: 0
+    max: 5
+    step: 0.1
+
+    icon: mdi:shaker-outline
+    mode: box
+
+  lawn_rate_liquid_fert:
+    name: Liquid Fertiliser Rate
+    min: 0
+    max: 1000
+    step: 10
+
+    icon: mdi:water-circle
+    mode: box
+
+  lawn_rate_kelp:
+    name: Kelp Rate
+    min: 0
+    max: 500
+    step: 10
+
+    icon: mdi:seed
+    mode: box
+
+  lawn_rate_humate:
+    name: Humate Rate
+    min: 0
+    max: 500
+    step: 10
+
+    icon: mdi:cup-water
+    mode: box
+
+  lawn_rate_soil_wetter:
+    name: Soil Wetter Rate
+    min: 0
+    max: 1000
+    step: 10
+
+    icon: mdi:water-percent
+    mode: box
+
+  lawn_rate_preemergent:
+    name: Pre-emergent Rate
+    min: 0
+    max: 100
+    step: 1
+
+    icon: mdi:shield-bug
+    mode: box
+
+  lawn_rate_insecticide:
+    name: Insecticide Rate
+    min: 0
+    max: 100
+    step: 1
+
+    icon: mdi:bug-outline
+    mode: box
+
+  lawn_rate_fungicide:
+    name: Fungicide Rate
+    min: 0
+    max: 100
+    step: 1
+
+    icon: mdi:mushroom-outline
+    mode: box
+
+  lawn_rate_herbicide:
+    name: Herbicide Rate
+    min: 0
+    max: 100
+    step: 1
+
+    icon: mdi:sprout-outline
+    mode: box
+
+  lawn_rate_pgr:
+    name: PGR Rate
+    min: 0
+    max: 100
+    step: 1
+
+    icon: mdi:expansion-card-variant
+    mode: box
+
+  # ── Task Intervals (Days) ────────────────────────────────────────────────
+
+  lawn_interval_mowing:
+    name: Mowing Interval
+    min: 1
+    max: 30
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:mower-on
+    mode: box
+
+  lawn_interval_kelp:
+    name: Kelp Interval
+    min: 1
+    max: 90
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:seed
+    mode: box
+
+  lawn_interval_granular_fert:
+    name: Granular Fert Interval
+    min: 1
+    max: 120
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:shaker-outline
+    mode: box
+
+  lawn_interval_liquid_fert:
+    name: Liquid Fert Interval
+    min: 1
+    max: 90
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:water-circle
+    mode: box
+
+  lawn_interval_humate:
+    name: Humate Interval
+    min: 1
+    max: 90
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:cup-water
+    mode: box
+
+  lawn_interval_soil_wetter:
+    name: Soil Wetter Interval
+    min: 1
+    max: 120
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:water-percent
+    mode: box
+
+  lawn_interval_preemergent:
+    name: Pre-emergent Interval
+    min: 1
+    max: 180
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:shield-bug
+    mode: box
+
+  lawn_interval_insecticide:
+    name: Insecticide Interval
+    min: 1
+    max: 180
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:bug-outline
+    mode: box
+
+  lawn_interval_fungicide:
+    name: Fungicide Interval
+    min: 1
+    max: 90
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:mushroom-outline
+    mode: box
+
+  lawn_interval_herbicide:
+    name: Herbicide Interval
+    min: 1
+    max: 180
+    step: 1
+    unit_of_measurement: "days"
+    icon: mdi:sprout-outline
+    mode: box
+
+  # ── GDD Tracking ─────────────────────────────────────────────────────────
+
+  pgr_gdd_accumulated:
+    name: Accumulated GDD
+    min: 0
+    max: 2000
+    step: 0.1
+    unit_of_measurement: "GDD"
+    icon: mdi:chart-line
+    mode: box
+
+  pgr_gdd_target:
+    name: Target GDD for PGR
+    min: 50
+    max: 500
+    step: 10
+    unit_of_measurement: "GDD"
+    icon: mdi:target
+    mode: box
+
+  # ── Temperature Tracking ─────────────────────────────────────────────────
+
+  lawn_temp_daily_max:
+    name: "Today's Max Temp"
+    min: -20
+    max: 60
+    step: 0.1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer-chevron-up
+    mode: box
+
+  lawn_temp_daily_min:
+    name: "Today's Min Temp"
+    min: -20
+    max: 60
+    step: 0.1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer-chevron-down
+    mode: box
+
+  # ── Inventory / Stock Levels ─────────────────────────────────────────────
+  # Set these to your current stock when first installing.
+
+  lawn_stock_kelp:
+    name: "Stock: Kelp"
+    min: 0
+    max: 50000
+    step: 10
+
+    icon: mdi:bottle-tonic
+    mode: box
+
+  lawn_stock_granular_fert:
+    name: "Stock: Granular Fert"
+    min: 0
+    max: 100
+    step: 0.1
+
+    icon: mdi:sack
+    mode: box
+
+  lawn_stock_liquid_fert:
+    name: "Stock: Liquid Fert"
+    min: 0
+    max: 50000
+    step: 10
+
+    icon: mdi:bottle-tonic-outline
+    mode: box
+
+  lawn_stock_humate:
+    name: "Stock: Humate"
+    min: 0
+    max: 50000
+    step: 10
+
+    icon: mdi:bottle-tonic-plus
+    mode: box
+
+  lawn_stock_soil_wetter:
+    name: "Stock: Soil Wetter"
+    min: 0
+    max: 50000
+    step: 10
+
+    icon: mdi:bottle-wine
+    mode: box
+
+  lawn_stock_preemergent:
+    name: "Stock: Pre-emergent"
+    min: 0
+    max: 10000
+    step: 10
+
+    icon: mdi:bottle-tonic-skull
+    mode: box
+
+  lawn_stock_insecticide:
+    name: "Stock: Insecticide"
+    min: 0
+    max: 10000
+    step: 10
+
+    icon: mdi:bottle-tonic-skull-outline
+    mode: box
+
+  lawn_stock_fungicide:
+    name: "Stock: Fungicide"
+    min: 0
+    max: 10000
+    step: 10
+
+    icon: mdi:bottle-tonic-plus-outline
+    mode: box
+
+  lawn_stock_herbicide:
+    name: "Stock: Herbicide"
+    min: 0
+    max: 10000
+    step: 10
+
+    icon: mdi:spray-bottle
+    mode: box
+
+  lawn_stock_pgr:
+    name: "Stock: PGR"
+    min: 0
+    max: 10000
+    step: 10
+
+    icon: mdi:spray
+    mode: box
+
+  lawn_stock_alert_threshold:
+    name: "Low Stock Alert Threshold"
+    min: 5
+    max: 50
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:alert-outline
+    mode: slider
+
+  # ── Irrigation Settings ──────────────────────────────────────────────────
+
+  lawn_sprinkler_precip_rate:
+    name: "Sprinkler Precipitation Rate"
+    min: 1
+    max: 40
+    step: 0.5
+    unit_of_measurement: "mm/hr"
+    icon: mdi:sprinkler-variant
+    mode: box
+
+  lawn_moisture_threshold:
+    name: "Soil Moisture Suppress Threshold"
+    min: 0
+    max: 100
+    step: 5
+    unit_of_measurement: "%"
+    icon: mdi:water-thermometer
+    mode: slider
+
+  # ── Nitrogen Tracking ────────────────────────────────────────────────────
+
+  lawn_nitrogen_applied_season:
+    name: "Nitrogen Applied (Season Total)"
+    min: 0
+    max: 100
+    step: 0.01
+    unit_of_measurement: "kg N"
+    icon: mdi:atom
+    mode: box
+
+  lawn_granular_fert_n_fraction:
+    name: "Granular Fert N Content"
+    min: 0
+    max: 1
+    step: 0.01
+    unit_of_measurement: "%/100"
+    icon: mdi:percent
+    mode: box
+
+  lawn_liquid_fert_n_fraction:
+    name: "Liquid Fert N Content"
+    min: 0
+    max: 1
+    step: 0.001
+    unit_of_measurement: "%/100"
+    icon: mdi:percent
+    mode: box
+
+
+# =============================================================================
+# INPUT TEXT — Area Names & Notes
+# =============================================================================
+
+input_text:
+
+  lawn_area_1_name:
+    name: "Area 1: Name"
+    max: 50
+    icon: mdi:label
+
+  lawn_area_2_name:
+    name: "Area 2: Name"
+    max: 50
+    icon: mdi:label
+
+  lawn_area_3_name:
+    name: "Area 3: Name"
+    max: 50
+    icon: mdi:label
+
+  lawn_area_4_name:
+    name: "Area 4: Name"
+    max: 50
+    icon: mdi:label
+
+  lawn_area_5_name:
+    name: "Area 5: Name"
+    max: 50
+    icon: mdi:label
+
+  lawn_task_notes:
+    name: Task Notes
+    max: 255
+    icon: mdi:note-text
+
+  # ── Custom Product Definitions (UI-editable) ───────────────────────────
+  # When "Custom" is selected in a product dropdown, these fields define
+  # the product. Edit them from the Products view — no YAML editing needed.
+
+  lawn_custom_name_kelp:
+    name: "Custom Kelp Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_kelp:
+    name: "Custom Kelp Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_kelp:
+    name: "Custom Kelp Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_granular_fert:
+    name: "Custom Granular Fert Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_granular_fert:
+    name: "Custom Granular Fert Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_granular_fert:
+    name: "Custom Granular Fert Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_liquid_fert:
+    name: "Custom Liquid Fert Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_liquid_fert:
+    name: "Custom Liquid Fert Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_liquid_fert:
+    name: "Custom Liquid Fert Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_humate:
+    name: "Custom Humate Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_humate:
+    name: "Custom Humate Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_humate:
+    name: "Custom Humate Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_soil_wetter:
+    name: "Custom Soil Wetter Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_soil_wetter:
+    name: "Custom Soil Wetter Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_soil_wetter:
+    name: "Custom Soil Wetter Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_preemergent:
+    name: "Custom Pre-emergent Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_preemergent:
+    name: "Custom Pre-emergent Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_preemergent:
+    name: "Custom Pre-emergent Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_insecticide:
+    name: "Custom Insecticide Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_insecticide:
+    name: "Custom Insecticide Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_insecticide:
+    name: "Custom Insecticide Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_fungicide:
+    name: "Custom Fungicide Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_fungicide:
+    name: "Custom Fungicide Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_fungicide:
+    name: "Custom Fungicide Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_herbicide:
+    name: "Custom Herbicide Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_herbicide:
+    name: "Custom Herbicide Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_herbicide:
+    name: "Custom Herbicide Notes"
+    max: 255
+    icon: mdi:note-text
+
+  lawn_custom_name_pgr:
+    name: "Custom PGR Name"
+    max: 100
+    icon: mdi:flask-outline
+  lawn_custom_ai_pgr:
+    name: "Custom PGR Active Ingredient"
+    max: 255
+    icon: mdi:flask
+  lawn_custom_notes_pgr:
+    name: "Custom PGR Notes"
+    max: 255
+    icon: mdi:note-text
+
+# =============================================================================
+# INPUT DATETIME — Last Applied
+# =============================================================================
+
+input_datetime:
+  lawn_last_mowing:
+    name: Last Mowed
+    has_date: true
+    has_time: true
+    icon: mdi:mower-on
+
+  lawn_last_kelp:
+    name: Last Kelp
+    has_date: true
+    has_time: true
+    icon: mdi:seed
+
+  lawn_last_granular_fert:
+    name: Last Granular Fert
+    has_date: true
+    has_time: true
+    icon: mdi:shaker-outline
+
+  lawn_last_liquid_fert:
+    name: Last Liquid Fert
+    has_date: true
+    has_time: true
+    icon: mdi:water-circle
+
+  lawn_last_humate:
+    name: Last Humate
+    has_date: true
+    has_time: true
+    icon: mdi:cup-water
+
+  lawn_last_soil_wetter:
+    name: Last Soil Wetter
+    has_date: true
+    has_time: true
+    icon: mdi:water-percent
+
+  lawn_last_preemergent:
+    name: Last Pre-emergent
+    has_date: true
+    has_time: true
+    icon: mdi:shield-bug
+
+  lawn_last_insecticide:
+    name: Last Insecticide
+    has_date: true
+    has_time: true
+    icon: mdi:bug-outline
+
+  lawn_last_fungicide:
+    name: Last Fungicide
+    has_date: true
+    has_time: true
+    icon: mdi:mushroom-outline
+
+  lawn_last_herbicide:
+    name: Last Herbicide
+    has_date: true
+    has_time: true
+    icon: mdi:sprout-outline
+
+  lawn_last_pgr:
+    name: Last PGR
+    has_date: true
+    has_time: true
+    icon: mdi:expansion-card-variant
+
+
+# =============================================================================
+# TEMPLATE SENSORS
+# =============================================================================
+
+template:
+
+  # ── Trigger-Based Sensor: Fetch Forecast Data (hourly + on start) ──────
+  - trigger:
+      - platform: time_pattern
+        hours: "/1"
+      - platform: homeassistant
+        event: start
+    action:
+      - action: weather.get_forecasts
+        target:
+          entity_id: *weather_forecast    # ⚙️ USER-CONFIG
+        data:
+          type: daily
+        response_variable: daily_forecast
+    sensor:
+      - name: "Lawn Weather Forecast Custom"
+        unique_id: lawn_weather_forecast_custom
+        state: "{{ now().strftime('%Y-%m-%d %H:%M') }}"
+        icon: mdi:weather-partly-cloudy
+        attributes:
+          forecast: "{{ (daily_forecast.values() | list)[0].forecast }}"
+
+  # ── Standard Template Sensors ──────────────────────────────────────────
+  - sensor:
+
+      # NOTE: The wrapper sensors for daily max/min temp from v2.1 have been
+      # removed. The input_numbers now have device_class/state_class via
+      # customize: — reference input_number.lawn_temp_daily_max directly.
+
+      - name: "Lawn GDD Today"
+        unique_id: lawn_gdd_today
+        state: |
+          {% set max_temp = states('input_number.lawn_temp_daily_max') | float(0) %}
+          {% set min_temp = states('input_number.lawn_temp_daily_min') | float(0) %}
+          {% set lawn_type = states('input_select.lawn_type') %}
+          {% if 'Cool Season' in lawn_type %}
+            {% set base_temp = 5 %}
+          {% else %}
+            {% set base_temp = 10 %}
+          {% endif %}
+          {% set gdd = ((max_temp + min_temp) / 2) - base_temp %}
+          {{ [gdd, 0] | max | round(1) }}
+        unit_of_measurement: "GDD"
+        icon: mdi:thermometer-lines
+        attributes:
+          lawn_type: "{{ states('input_select.lawn_type') }}"
+          base_temperature: |
+            {% if 'Cool Season' in states('input_select.lawn_type') %}5{% else %}10{% endif %}
+
+      - name: "Lawn Total Area"
+        unique_id: lawn_total_area
+        state: |
+          {{ (states('input_number.lawn_area_1_size') | float(0) +
+              states('input_number.lawn_area_2_size') | float(0) +
+              states('input_number.lawn_area_3_size') | float(0) +
+              states('input_number.lawn_area_4_size') | float(0) +
+              states('input_number.lawn_area_5_size') | float(0)) | round(0) }}
+        unit_of_measurement: "m²"
+        icon: mdi:texture-box
+
+      - name: "Lawn Wind Speed Forecast"
+        unique_id: lawn_wind_speed_forecast
+        state: |
+          {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
+          {% if forecast %}
+            {% set max_wind = namespace(value=0) %}
+            {% for day in forecast[:1] %}
+              {% if day.wind_speed is defined %}
+                {% set wind = day.wind_speed | float(0) %}
+                {% if wind > max_wind.value %}
+                  {% set max_wind.value = wind %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ max_wind.value | round(1) }}
+          {% else %}
+            0
+          {% endif %}
+        unit_of_measurement: "km/h"
+        icon: mdi:weather-windy
+        device_class: wind_speed
+
+      - name: "Lawn Rain Forecast"
+        unique_id: lawn_rain_forecast
+        state: |
+          {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
+          {% if forecast %}
+            {% set total_rain = namespace(value=0) %}
+            {% for day in forecast[:1] %}
+              {% if day.precipitation is defined %}
+                {% set total_rain.value = total_rain.value + (day.precipitation | float(0)) %}
+              {% endif %}
+            {% endfor %}
+            {{ total_rain.value | round(1) }}
+          {% else %}
+            0
+          {% endif %}
+        unit_of_measurement: "mm"
+        icon: mdi:weather-pouring
+        device_class: precipitation
+
+      - name: "Lawn Spray Conditions"
+        unique_id: lawn_spray_conditions
+        state: |
+          {% set wind = states('sensor.lawn_wind_speed_forecast') | float(0) %}
+          {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+          {% if wind > 25 or rain > 5 %}
+            Poor
+          {% elif wind > 15 or rain > 2 %}
+            Marginal
+          {% else %}
+            Good
+          {% endif %}
+        icon: |
+          {% set wind = states('sensor.lawn_wind_speed_forecast') | float(0) %}
+          {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+          {% if wind > 25 or rain > 5 %}mdi:close-circle
+          {% elif wind > 15 or rain > 2 %}mdi:alert-circle
+          {% else %}mdi:check-circle{% endif %}
+        attributes:
+          wind_speed: "{{ states('sensor.lawn_wind_speed_forecast') }} km/h"
+          rain_forecast: "{{ states('sensor.lawn_rain_forecast') }} mm"
+          recommendation: |
+            {% set wind = states('sensor.lawn_wind_speed_forecast') | float(0) %}
+            {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+            {% if wind > 25 or rain > 5 %}
+              Poor conditions. High wind or rain forecast — delay spraying.
+            {% elif wind > 15 or rain > 2 %}
+              Borderline conditions. Monitor wind and rain before spraying.
+            {% else %}
+              Ideal spray conditions. Low wind and minimal rain expected.
+            {% endif %}
+
+      - name: "Lawn Next Spray Window"
+        unique_id: lawn_next_spray_window
+        state: |
+          {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
+          {% if forecast %}
+            {% set found = namespace(day='') %}
+            {% for day in forecast[:7] %}
+              {% if found.day == '' %}
+                {% set wind = day.wind_speed | float(100) if day.wind_speed is defined else 100 %}
+                {% set rain = day.precipitation | float(100) if day.precipitation is defined else 100 %}
+                {% if wind < 15 and rain < 2 %}
+                  {% set found.day = day.datetime if day.datetime is defined else 'Unknown' %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ found.day[:10] if found.day else 'No suitable window in next 7 days' }}
+          {% else %}
+            unavailable
+          {% endif %}
+        icon: mdi:calendar-check
+
+      - name: "Lawn GDD Projection 5-Day"
+        unique_id: lawn_gdd_projection_5day
+        state: |
+          {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
+          {% set lawn_type = states('input_select.lawn_type') %}
+          {% if 'Cool Season' in lawn_type %}
+            {% set base_temp = 5 %}
+          {% else %}
+            {% set base_temp = 10 %}
+          {% endif %}
+          {% if forecast %}
+            {% set total_gdd = namespace(value=0) %}
+            {% for day in forecast[:5] %}
+              {% if day.temperature is defined and day.templow is defined %}
+                {% set max_t = day.temperature | float(0) %}
+                {% set min_t = day.templow | float(0) %}
+                {% set daily_gdd = ((max_t + min_t) / 2) - base_temp %}
+                {% set total_gdd.value = total_gdd.value + ([daily_gdd, 0] | max) %}
+              {% endif %}
+            {% endfor %}
+            {{ total_gdd.value | round(1) }}
+          {% else %}
+            0
+          {% endif %}
+        unit_of_measurement: "GDD"
+        icon: mdi:calendar-range
+        attributes:
+          base_temperature: |
+            {% if 'Cool Season' in states('input_select.lawn_type') %}5{% else %}10{% endif %}
+          lawn_type: "{{ states('input_select.lawn_type') }}"
+          days_available: |
+            {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
+            {{ [forecast | length, 5] | min if forecast else 0 }}
+
+      - name: "Lawn PGR Days Until"
+        unique_id: lawn_pgr_days_until
+        state: |
+          {% set current_gdd = states('input_number.pgr_gdd_accumulated') | float(0) %}
+          {% set target_gdd = states('input_number.pgr_gdd_target') | float(200) %}
+          {% set remaining = target_gdd - current_gdd %}
+          {% if remaining <= 0 %}
+            0
+          {% else %}
+            {% set proj_5d = states('sensor.lawn_gdd_projection_5day') | float(0) %}
+            {% set daily_avg = (proj_5d / 5) if proj_5d > 0
+                               else states('sensor.lawn_gdd_today') | float(0) %}
+            {{ (remaining / daily_avg) | round(0) if daily_avg > 0 else 'unavailable' }}
+          {% endif %}
+        unit_of_measurement: "days"
+        icon: mdi:calendar-clock
+        attributes:
+          current_gdd: "{{ states('input_number.pgr_gdd_accumulated') }}"
+          target_gdd: "{{ states('input_number.pgr_gdd_target') }}"
+          gdd_remaining: |
+            {{ (states('input_number.pgr_gdd_target') | float(0) -
+                states('input_number.pgr_gdd_accumulated') | float(0)) | round(1) }}
+
+      - name: "Lawn PGR Forecast Date"
+        unique_id: lawn_pgr_forecast_date
+        state: |
+          {% set current_gdd = states('input_number.pgr_gdd_accumulated') | float(0) %}
+          {% set target_gdd = states('input_number.pgr_gdd_target') | float(200) %}
+          {% set projection_5day = states('sensor.lawn_gdd_projection_5day') | float(0) %}
+          {% if current_gdd >= target_gdd %}
+            Now (Target Reached)
+          {% elif current_gdd + projection_5day >= target_gdd %}
+            {% set forecast = state_attr('sensor.lawn_weather_forecast_custom', 'forecast') %}
+            {% set lawn_type = states('input_select.lawn_type') %}
+            {% if 'Cool Season' in lawn_type %}
+              {% set base_temp = 5 %}
+            {% else %}
+              {% set base_temp = 10 %}
+            {% endif %}
+            {% if forecast %}
+              {% set running_gdd = namespace(value=current_gdd) %}
+              {% set found_date = namespace(value='') %}
+              {% for day in forecast[:7] %}
+                {% if found_date.value == '' %}
+                  {% if day.temperature is defined and day.templow is defined %}
+                    {% set max_t = day.temperature | float(0) %}
+                    {% set min_t = day.templow | float(0) %}
+                    {% set daily_gdd = ((max_t + min_t) / 2) - base_temp %}
+                    {% set running_gdd.value = running_gdd.value + ([daily_gdd, 0] | max) %}
+                    {% if running_gdd.value >= target_gdd %}
+                      {% set found_date.value = day.datetime if day.datetime is defined else '' %}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+              {{ found_date.value[:10] if found_date.value else '5+ days' }}
+            {% else %}
+              Unknown
+            {% endif %}
+          {% else %}
+            5+ days
+          {% endif %}
+        icon: mdi:calendar-star
+
+      # ── NEW: ET₀ Irrigation Estimate (Hargreaves equation) ──────────────
+      #
+      # Uses a simplified Hargreaves model. The Ra (extraterrestrial radiation)
+      # value of 15.0 MJ/m²/day is approximate for Perth (~31.9°S).
+      # Adjust if you're at a significantly different latitude.
+
+      - name: "Lawn ET Estimate"
+        unique_id: lawn_et_estimate
+        state: |
+          {% set max_t = states('input_number.lawn_temp_daily_max') | float(25) %}
+          {% set min_t = states('input_number.lawn_temp_daily_min') | float(15) %}
+          {% set avg_t = (max_t + min_t) / 2 %}
+          {% set td = max_t - min_t %}
+          {% if td < 0 %}{% set td = 0 %}{% endif %}
+          {% set ra = 15.0 %}
+          {% set et0 = 0.0023 * (avg_t + 17.8) * (td ** 0.5) * ra * 0.408 %}
+          {{ [et0, 0] | max | round(2) }}
+        unit_of_measurement: "mm/day"
+        icon: mdi:water-outline
+        device_class: precipitation
+        state_class: measurement
+        attributes:
+          method: "Hargreaves (simplified)"
+          ra_assumed: "15.0 MJ/m²/day"
+
+      - name: "Lawn Irrigation Minutes"
+        unique_id: lawn_irrigation_minutes
+        state: |
+          {% set et = states('sensor.lawn_et_estimate') | float(0) %}
+          {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+          {% set kc = 0.85 %}
+          {% set net_demand = (et * kc) - rain %}
+          {% set precip_rate = states('input_number.lawn_sprinkler_precip_rate') | float(12) %}
+          {% if net_demand > 0.5 %}
+            {{ ((net_demand / precip_rate) * 60) | round(0) }}
+          {% else %}
+            0
+          {% endif %}
+        unit_of_measurement: "min"
+        icon: mdi:timer-outline
+        attributes:
+          et0: "{{ states('sensor.lawn_et_estimate') }} mm"
+          rain_offset: "{{ states('sensor.lawn_rain_forecast') }} mm"
+          net_demand_mm: |
+            {% set et = states('sensor.lawn_et_estimate') | float(0) %}
+            {% set rain = states('sensor.lawn_rain_forecast') | float(0) %}
+            {{ ((et * 0.85) - rain) | round(2) }}
+
+      # ── NEW: Soil Moisture Average ──────────────────────────────────────
+      #
+      # Add your soil moisture sensor entity IDs below.
+      # Supports any number of probes — just add them to the list.
+      # If you don't have probes yet, this sensor will show "unavailable"
+      # and all moisture conditions will gracefully pass through.
+
+      - name: "Lawn Average Soil Moisture"
+        unique_id: lawn_avg_soil_moisture
+        state: |
+          {% set probe_entities = [
+            'sensor.soil_moisture_front',
+            'sensor.soil_moisture_back',
+          ] %}
+          {% set valid = namespace(values=[]) %}
+          {% for entity in probe_entities %}
+            {% set val = states(entity) %}
+            {% if val not in ['unavailable', 'unknown', 'none'] %}
+              {% set valid.values = valid.values + [val | float(0)] %}
+            {% endif %}
+          {% endfor %}
+          {% if valid.values | length > 0 %}
+            {{ (valid.values | sum / valid.values | length) | round(1) }}
+          {% else %}
+            unavailable
+          {% endif %}
+        unit_of_measurement: "%"
+        device_class: moisture
+        icon: mdi:water-thermometer
+
+      # ── NEW: Low Stock Items Sensor ─────────────────────────────────────
+
+      - name: "Lawn Low Stock Items"
+        unique_id: lawn_low_stock_items
+        state: |
+          {% set threshold_pct = states('input_number.lawn_stock_alert_threshold') | float(20) / 100 %}
+          {% set products = [
+            ('Kelp',         'lawn_stock_kelp',          50000),
+            ('Granular Fert','lawn_stock_granular_fert',  100),
+            ('Liquid Fert',  'lawn_stock_liquid_fert',   50000),
+            ('Humate',       'lawn_stock_humate',        50000),
+            ('Soil Wetter',  'lawn_stock_soil_wetter',   50000),
+            ('Pre-emergent', 'lawn_stock_preemergent',   10000),
+            ('Insecticide',  'lawn_stock_insecticide',   10000),
+            ('Fungicide',    'lawn_stock_fungicide',     10000),
+            ('Herbicide',    'lawn_stock_herbicide',     10000),
+            ('PGR',          'lawn_stock_pgr',           10000),
+          ] %}
+          {% set low = namespace(count=0) %}
+          {% for name, entity, max_cap in products %}
+            {% set current = states('input_number.' ~ entity) | float(0) %}
+            {% if current <= (max_cap * threshold_pct) and current >= 0 %}
+              {% set low.count = low.count + 1 %}
+            {% endif %}
+          {% endfor %}
+          {{ low.count }}
+        unit_of_measurement: "items"
+        icon: |
+          {% if states('sensor.lawn_low_stock_items') | int(0) > 0 %}
+            mdi:alert-circle
+          {% else %}
+            mdi:check-circle
+          {% endif %}
+        attributes:
+          details: |
+            {% set threshold_pct = states('input_number.lawn_stock_alert_threshold') | float(20) / 100 %}
+            {% set products = [
+              ('Kelp',         'lawn_stock_kelp',          50000, states('input_select.lawn_unit_kelp')),
+              ('Granular Fert','lawn_stock_granular_fert',  100,  states('input_select.lawn_unit_granular_fert')),
+              ('Liquid Fert',  'lawn_stock_liquid_fert',   50000, states('input_select.lawn_unit_liquid_fert')),
+              ('Humate',       'lawn_stock_humate',        50000, states('input_select.lawn_unit_humate')),
+              ('Soil Wetter',  'lawn_stock_soil_wetter',   50000, states('input_select.lawn_unit_soil_wetter')),
+              ('Pre-emergent', 'lawn_stock_preemergent',   10000, states('input_select.lawn_unit_preemergent')),
+              ('Insecticide',  'lawn_stock_insecticide',   10000, states('input_select.lawn_unit_insecticide')),
+              ('Fungicide',    'lawn_stock_fungicide',     10000, states('input_select.lawn_unit_fungicide')),
+              ('Herbicide',    'lawn_stock_herbicide',     10000, states('input_select.lawn_unit_herbicide')),
+              ('PGR',          'lawn_stock_pgr',           10000, states('input_select.lawn_unit_pgr')),
+            ] %}
+            {% set low = namespace(items=[]) %}
+            {% for name, entity, max_cap, unit in products %}
+              {% set current = states('input_number.' ~ entity) | float(0) %}
+              {% if current <= (max_cap * threshold_pct) %}
+                {% set low.items = low.items + [name ~ ': ' ~ current | round(0) ~ unit] %}
+              {% endif %}
+            {% endfor %}
+            {{ low.items | join(' · ') if low.items else 'All stocked' }}
+
+
+
+      # ── Product Database Source Sensors (SINGLE SOURCE OF TRUTH) ──────
+      # Each sensor defines the product dictionary ONCE. All other sensors
+      # and automations reference these via state_attr().
+      # TO ADD A PRODUCT: 1) Add to the dict below  2) Add to input_select options
+
+      # ── Product Database Carriers (SINGLE SOURCE OF TRUTH) ──────────
+      # Each sensor stores the product dictionary in its 'products' attribute.
+      # To add a product: add its name to the input_select options AND add
+      # its entry to the dict below. That's it — all sensors and automations
+      # read from here automatically via state_attr().
+
+      - name: "Kelp / Seaweed DB"
+        unique_id: lawn_db_kelp
+        state: "kelp"
+        attributes:
+          products: |
+            {{ {'LawnPride Kelpxtra': {'r': {'Foliar': [100, 100], 'Soil Drench': [100, 100]}, 'u': 'ml', 'a': 'Kelp extract', 't': 'Foliar or soil. Safe on all plants including natives.', 'n': 0}, 'Fertech Kelpro': {'r': {'Foliar': [100, 200], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Concentrated Ecklonia maxima extract', 't': 'Foliar or soil. Highly concentrated. Relieves heat stress.', 'n': 0}, 'Lawn Juice NitroKelp': {'r': {'Foliar': [150, 300], 'Soil Drench': [150, 300]}, 'u': 'ml', 'a': 'Kelp + nitrogen', 't': 'Foliar or soil. Kelp combined with nitrogen for quick green-up.', 'n': 0}, "Ralphy's Seacharge": {'r': {'Foliar': [100, 100], 'Soil Drench': [100, 100]}, 'u': 'ml', 'a': 'Seaweed extract', 't': 'Foliar or soil. Apply every 4 weeks. Rejuvenates stressed turf.', 'n': 0}, 'Plant Doctor Seaweed Secrets': {'r': {'Foliar': [100, 200], 'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Seaweed extract', 't': 'Foliar or soil. Apply every 2-4 weeks.', 'n': 0}, 'LawnPride Rootmaxx': {'r': {'Foliar': [250, 250], 'Soil Drench': [250, 250]}, 'u': 'ml', 'a': 'Bio-stimulant complex', 't': 'Foliar or soil. Can be left on leaf or watered in. Not for Natives.', 'n': 0}, 'Eco Growth Eco Vital': {'r': {'Foliar': [100, 100], 'Soil Drench': [100, 100]}, 'u': 'ml', 'a': 'Bio-stimulant', 't': 'Foliar or soil. Apply every 4 weeks.', 'n': 0}, 'Plant Doctor Activ8mate': {'r': {'Foliar': [75, 75], 'Soil Drench': [75, 75]}, 'u': 'ml', 'a': 'Bio-stimulant', 't': 'Foliar or soil. Apply every 2-4 weeks.', 'n': 0}, 'Lawn Juice Kelp Guard+': {'r': {'Foliar': [100, 100], 'Soil Drench': [100, 100]}, 'u': 'ml', 'a': 'Organic kelp extract', 't': 'Water in. Strengthens resilience against disease/pest. Year round.', 'n': 0}, 'PGF SeaGreen Kelp': {'r': {'Foliar': [100, 100], 'Soil Drench': [100, 100]}, 'u': 'ml', 'a': 'Concentrated kelp', 't': 'Water in. Boosts root development and microbial activity.', 'n': 0}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Granular Fertiliser DB"
+        unique_id: lawn_db_granular_fert
+        state: "granular_fert"
+        attributes:
+          products: |
+            {{ {'LawnPride Groturf 15-4-11': {'r': {'Broadcast': [2.0, 3.0]}, 'u': 'kg', 'a': 'NPK 15-4-11', 't': 'Water in. Irrigate thoroughly immediately to avoid burning.', 'n': 0.15}, 'LawnPride Maintain 26-1-9': {'r': {'Broadcast': [2.0, 2.0]}, 'u': 'kg', 'a': 'NPK 26-1-9 + Iron', 't': 'Water in. Contains iron; blow off hard surfaces to prevent staining.', 'n': 0.26}, 'LawnPride Maintain Mini': {'r': {'Broadcast': [2.0, 2.0]}, 'u': 'kg', 'a': 'NPK 26-1-9 + Iron', 't': 'Water in. Mini prill for finer turf.', 'n': 0.26}, 'LawnPride Turfmaxx 19-1-16': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'NPK 19-1-16 (67% slow-release N)', 't': 'Water in. Contains 67% slow-release nitrogen.', 'n': 0.19}, 'LawnPride Organomaxx 3-1-2': {'r': {'Broadcast': [2.0, 10.0]}, 'u': 'kg', 'a': 'NPK 3-1-2 organic', 't': 'Water in. Soil conditioner and fertiliser. Apply with spreader.', 'n': 0.03}, 'Terralift TX10 5-2-8': {'r': {'Broadcast': [2.0, 4.0]}, 'u': 'kg', 'a': 'NPK 5-2-8 organic', 't': 'Water in. Organic soil builder. Irrigate immediately.', 'n': 0.05}, '2Spec Accelerate': {'r': {'Broadcast': [2.0, 2.5]}, 'u': 'kg', 'a': 'High-nitrogen granular', 't': 'Water in. High-nitrogen for rapid growth. Irrigate thoroughly.', 'n': 0}, '2Spec Elevate': {'r': {'Broadcast': [2.0, 3.0]}, 'u': 'kg', 'a': 'Premium granular', 't': 'Water in. Best applied with broadcast spreader.', 'n': 0}, '2Spec Endurance': {'r': {'Broadcast': [2.0, 3.0]}, 'u': 'kg', 'a': 'Slow-release granular', 't': 'Water in. Slow-release. Wash into soil profile.', 'n': 0}, '2Spec Origin Mini': {'r': {'Broadcast': [2.0, 3.0]}, 'u': 'kg', 'a': 'Fine prill granular', 't': 'Water in. Fine prill for dense cut turf. Irrigate immediately.', 'n': 0}, 'Baileys SureGreen Profile Mini': {'r': {'Broadcast': [2.0, 3.0]}, 'u': 'kg', 'a': 'Phosphate-free granular', 't': 'Water in. P-free. Ideal for regular maintenance.', 'n': 0}, 'Baileys 3.1.1 Grosorb': {'r': {'Broadcast': [3.0, 3.0]}, 'u': 'kg', 'a': 'NPK 21-3-7 + Grosorb', 't': 'Water in. Apply every 8 weeks. Ideal for hydrophobic sand.', 'n': 0.21}, 'Baileys 3.1.1 Granulated': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'NPK 21-3-7', 't': 'Water in. Apply every 10-12 weeks.', 'n': 0.21}, 'Baileys Brilliance': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'Phosphate-free + Iron', 't': 'Water in. Apply every 8 weeks. P-free. Blow off hard surfaces (iron).', 'n': 0}, 'Baileys 4.1.1': {'r': {'Broadcast': [1.5, 3.0]}, 'u': 'kg', 'a': 'Cool-season blend', 't': 'Water in. 1.5kg/4wks or 3kg/8wks. Great for winter.', 'n': 0}, 'Baileys SG Maintain': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'Controlled-release granular', 't': 'Water in. Apply every 10-12 weeks.', 'n': 0}, 'Baileys SG Elite': {'r': {'Broadcast': [2.0, 2.0]}, 'u': 'kg', 'a': 'Premium granular', 't': 'Water in. Apply every 8 weeks.', 'n': 0}, 'Baileys SG Renovate': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'Renovation granular', 't': 'Water in. Apply every 8 weeks.', 'n': 0}, 'Baileys Turfect Energy': {'r': {'Broadcast': [3.0, 3.0]}, 'u': 'kg', 'a': 'Biological lawn fertiliser', 't': 'Water in. Apply every 8 weeks.', 'n': 0}, 'Baileys Energy Max': {'r': {'Broadcast': [5.0, 5.0]}, 'u': 'kg', 'a': 'High-rate organic', 't': 'Water in. Apply every 8 weeks.', 'n': 0}, 'Eco Prime Emerald': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'Rock mineral NPK + microbes', 't': 'Water in. Apply every 8-10 weeks.', 'n': 0}, 'Eco Prime Emerald Mini': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'Rock mineral NPK + microbes', 't': 'Water in. 1-2mm mini prill for dense/premium turf.', 'n': 0}, 'Eco Prime Purple / Red': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'Rock mineral NPK', 't': 'Water in. Apply every 8-10 weeks. Red is K-heavy, Purple is general.', 'n': 0}, "Ralphy's All Rounder": {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': '50% controlled-release N + 2% Iron', 't': 'Water in. Apply every 6-8 weeks.', 'n': 0}, 'Troforte Fert-O-Lawn': {'r': {'Broadcast': [5.0, 7.0]}, 'u': 'kg', 'a': 'Microbe-coated organic', 't': 'Water in. Do NOT use toxic chemical wetting agents with this.', 'n': 0}, 'Simplot NFLEXX': {'r': {'Broadcast': [2.0, 3.0]}, 'u': 'kg', 'a': 'Standard granular', 't': 'Water in. Irrigate immediately after spreading.', 'n': 0}, 'Baileys SureGreen Gold': {'r': {'Broadcast': [2.5, 3.0]}, 'u': 'kg', 'a': 'NPK 21.4-1-4.1 + Iron', 't': 'Water in. Sulphate of potash based, low salt index.', 'n': 0.214}, 'Lawn Juice RoyalGreen': {'r': {'Broadcast': [2.5, 3.0]}, 'u': 'kg', 'a': 'NPK 20-0-6 + traces (50% slow-release N)', 't': 'Water in. 50% coated slow-release N lasts 10-12 weeks.', 'n': 0.2}, 'Lawn Juice RoyalGreen Mini': {'r': {'Broadcast': [2.5, 3.0]}, 'u': 'kg', 'a': 'NPK 20-0-6 + traces (50% slow-release N)', 't': 'Water in. 1.5mm mini prill for fine cut turf. Contains wetting agent.', 'n': 0.2}, 'ICL ProTurf NPK': {'r': {'Broadcast': [2.5, 2.5]}, 'u': 'kg', 'a': 'Controlled-release mini granule + polyhalite', 't': 'Water in. Mini granules with Poly-S coating. Re-apply every 10-12 weeks.', 'n': 0}, 'ICL ProTurf HI N': {'r': {'Broadcast': [2.0, 3.5]}, 'u': 'kg', 'a': 'NPK 20-0-0 controlled-release', 't': 'Water in. Quick response even in cooler conditions. Contains Mg.', 'n': 0.2}, 'Custom': {'r': {'Broadcast': [0, 0]}, 'u': 'kg', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} }}
+
+      - name: "Liquid Fertiliser DB"
+        unique_id: lawn_db_liquid_fert
+        state: "liquid_fert"
+        attributes:
+          products: |
+            {{ {'LawnPride Greenxtra': {'r': {'Foliar': [200, 200]}, 'u': 'ml', 'a': 'Liquid iron + nutrients', 't': 'Dry on leaf. Foliar for fast colour. Do NOT water in.', 'n': 0}, "Ralphy's Showtime": {'r': {'Foliar': [200, 500], 'Soil Drench': [200, 500]}, 'u': 'ml', 'a': 'Iron + magnesium', 't': 'Dry on leaf OR water in. Iron/Mg for fast colour. Iron stains hard surfaces.', 'n': 0}, 'Baileys Turfect Rapid Green': {'r': {'Foliar': [300, 300]}, 'u': 'ml', 'a': 'Iron + manganese', 't': 'Dry on leaf. Apply every 2-4 weeks. Iron will stain fencing/concrete.', 'n': 0}, 'Baileys Turfect Green Plus': {'r': {'Foliar': [300, 300]}, 'u': 'ml', 'a': 'Iron blend', 't': 'Dry on leaf. Apply every 2-4 weeks. Iron will stain fencing/concrete.', 'n': 0}, 'Plant Doctor Liquid Iron': {'r': {'Foliar': [150, 400]}, 'u': 'ml', 'a': 'Liquid iron', 't': 'Dry on leaf. Apply every 2-4 weeks. Iron will stain fencing/concrete.', 'n': 0}, 'Plant Doctor Max Green': {'r': {'Foliar': [150, 400]}, 'u': 'ml', 'a': 'Iron + nutrient blend', 't': 'Dry on leaf. Apply every 2-4 weeks. Iron will stain fencing/concrete.', 'n': 0}, 'Floratine Knife Plus': {'r': {'Foliar': [50, 100]}, 'u': 'ml', 'a': 'Iron chelate', 't': 'Dry on leaf. Apply every 2-4 weeks. Iron will stain fencing/concrete.', 'n': 0}, 'Baileys Turfect Lawn Green': {'r': {'Foliar': [200, 400]}, 'u': 'ml', 'a': 'Liquid lawn fertiliser', 't': 'Dry on leaf. Foliar for fast green-up.', 'n': 0}, "Ralphy's Complete NPK": {'r': {'Foliar': [200, 500], 'Soil Drench': [200, 500]}, 'u': 'ml', 'a': 'Balanced NPK liquid', 't': 'Dry on leaf OR water in. Low burn risk. Can mix with Showtime.', 'n': 0}, 'Lawn Juice Vigorous Growth+': {'r': {'Foliar': [200, 400], 'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Liquid growth formula', 't': 'Dry on leaf best, but can be washed into root zone.', 'n': 0}, 'LawnPride Tracemaxx': {'r': {'Foliar': [200, 500]}, 'u': 'ml', 'a': 'Trace elements + micronutrients', 't': 'Dry on leaf. Foliar to correct nutrient deficiencies.', 'n': 0}, 'PGF Green Machine': {'r': {'Foliar': [200, 500], 'Soil Drench': [200, 500]}, 'u': 'ml', 'a': 'NPK 14-0-0 + 6% Fe + 1% Mg', 't': 'Dry on leaf for colour. Stabilised N + iron + magnesium.', 'n': 0.14}, 'Custom': {'r': {'Foliar': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate and N content.', 'n': 0.0}} }}
+
+      - name: "Humate / Humic Acid DB"
+        unique_id: lawn_db_humate
+        state: "humate"
+        attributes:
+          products: |
+            {{ {'Plant Doctor Stimulizer': {'r': {'Soil Drench': [4, 4]}, 'u': 'ml', 'a': 'Concentrated humic/fulvic', 't': 'Water in. Apply every 2-4 weeks. Very concentrated. Humic acid can stain.', 'n': 0}, 'Plant Doctor Quantum H': {'r': {'Soil Drench': [50, 75]}, 'u': 'ml', 'a': 'Organic humic acid', 't': 'Water in. Apply every 2-4 weeks. 100% organic. Humic acid can stain.', 'n': 0}, 'Baileys Turfect Humic': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic acid blend', 't': 'Water in. Apply every 4 weeks. Humic acid can stain.', 'n': 0}, 'Eco Growth Eco Humate': {'r': {'Soil Drench': [200, 200]}, 'u': 'ml', 'a': 'Liquid humus extract', 't': 'Water in. Apply every 4 weeks. Humic acid can stain.', 'n': 0}, "Ralphy's Unleash": {'r': {'Soil Drench': [100, 100]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'Water in. Apply every 4 weeks. Humic acid can stain.', 'n': 0}, 'UMX Liquid (Humic & Fulvic)': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Humic + Fulvic acid', 't': 'Water in. Humic acid can stain hard surfaces.', 'n': 0}, 'Plant Doctor Humic Acid Powder': {'r': {'Soil Drench': [30, 30]}, 'u': 'g', 'a': 'Powdered humic acid', 't': 'Dissolve and water in. Apply every 2-4 weeks. Humic acid can stain.', 'n': 0}, 'Humate Granules (Leonardite)': {'r': {'Soil Drench': [2.0, 5.0]}, 'u': 'kg', 'a': 'Leonardite humic acid 45-50% granular', 't': 'Water in. Apply every 3 months. Improves nutrient/water uptake.', 'n': 0}, 'Lawn Juice Thrive': {'r': {'Soil Drench': [200, 200]}, 'u': 'ml', 'a': 'Humic + fulvic acid', 't': 'Water in heavily. Improves nutrient absorption and soil structure.', 'n': 0}, 'PGF Carbon King': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Concentrated humic + fulvic acid', 't': 'Water in. Unlocks tied-up nutrients. Increases CEC in sandy soils.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Soil Wetter DB"
+        unique_id: lawn_db_soil_wetter
+        state: "soil_wetter"
+        attributes:
+          products: |
+            {{ {'LawnPride Hydramaxx': {'r': {'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Liquid wetting agent', 't': 'Water in heavily immediately after application.', 'n': 0}, 'LawnPride Hydramaxx G': {'r': {'Soil Drench': [2.0, 2.0]}, 'u': 'kg', 'a': 'Granular wetting agent', 't': 'Apply via spreader and irrigate thoroughly.', 'n': 0}, "Ralphy's Refresh": {'r': {'Soil Drench': [50, 100]}, 'u': 'ml', 'a': '3-way wetting agent', 't': 'Water in. Apply every 4 weeks. 50-100mL wetter, 100mL retainer.', 'n': 0}, "Ralphy's Flush": {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Penetrant surfactant', 't': 'Water in. Optimises irrigation and reduces run-off.', 'n': 0}, 'Hydrolink Retain': {'r': {'Soil Drench': [200, 500]}, 'u': 'ml', 'a': 'Wetting agent (retainer)', 't': 'Water in. Irrigate heavily immediately to push into soil.', 'n': 0}, 'Hydrolink Advance': {'r': {'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Premium penetrant + retainer', 't': 'Water in. Must be washed off the leaf.', 'n': 0}, 'Polywet Hold': {'r': {'Soil Drench': [200, 400]}, 'u': 'ml', 'a': 'Wetting agent', 't': 'Water in. Follow up with heavy watering cycle immediately.', 'n': 0}, 'Eco Wet Liquid': {'r': {'Soil Drench': [150, 200]}, 'u': 'ml', 'a': 'Fast-acting penetrant + retainer', 't': 'Water in. Apply every 4 weeks. Irrigate heavily immediately.', 'n': 0}, 'Eco Wet Granular': {'r': {'Soil Drench': [2.0, 4.0]}, 'u': 'kg', 'a': 'Granular wetting agent', 't': 'Water in. Great for targeting localised dry spots.', 'n': 0}, 'Baileys Grosorb Granular': {'r': {'Soil Drench': [3.0, 5.0]}, 'u': 'kg', 'a': 'Granular wetting agent', 't': 'Water in. Apply every 8 weeks. For highly hydrophobic soils.', 'n': 0}, 'Floratine Propel': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Penetrant wetting agent', 't': 'Water in. Apply every 2-4 weeks.', 'n': 0}, 'Plant Doctor Nature Soils Wetter': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Soil wetting agent', 't': 'Water in. Apply every 2-4 weeks.', 'n': 0}, 'Floratine Retain Pro': {'r': {'Soil Drench': [200, 300]}, 'u': 'ml', 'a': 'Moisture retaining agent', 't': 'Water in. Apply every 4 weeks. Helps soil hold moisture.', 'n': 0}, 'PCT Reactor Wetter 600': {'r': {'Soil Drench': [10, 20]}, 'u': 'ml', 'a': 'Spray adjuvant (sticker)', 't': 'Dry on leaf. Surfactant for herbicides. Rate is mL per 10L tank, NOT per 100sqm.', 'n': 0}, 'Sacoa BioWett Premium': {'r': {'Soil Drench': [250, 500]}, 'u': 'ml', 'a': 'Surfactant + humectant blend', 't': 'Water in. Premium moisture retention. Proven in WA turf trials. Low burn risk.', 'n': 0}, 'Lawn Juice Hydrate': {'r': {'Soil Drench': [250, 500]}, 'u': 'ml', 'a': 'Surfactant + humectant', 't': 'Water in. Protects against dry spot. Extends soil moisture retention.', 'n': 0}, 'ICL H2Pro TriSmart': {'r': {'Soil Drench': [100, 200]}, 'u': 'ml', 'a': 'Triple-active surfactant', 't': 'Water in. Premium root zone wetter. Reduces dry patch. Apply monthly.', 'n': 0}, 'Custom': {'r': {'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Pre-emergent Herbicide DB"
+        unique_id: lawn_db_preemergent
+        state: "preemergent"
+        attributes:
+          products: |
+            {{ {'Oxafert 16-2-6': {'r': {'Granular': [4.0, 4.0]}, 'u': 'kg', 'a': 'NPK 16-2-6 + Oxadiazon', 't': 'Water in. Irrigate immediately. Do not use on cool-season grass.', 'n': 0.16}, 'Turf Culture Spartan': {'r': {'Liquid Spray': [10, 40]}, 'u': 'ml', 'a': 'Oxadiazon 250g/L', 't': 'Water in. Requires min 3mm irrigation after application.', 'n': 0}, 'Barricade': {'r': {'Liquid Spray': [10, 40]}, 'u': 'ml', 'a': 'Prodiamine 480g/L', 't': 'Water in. Wash into soil with 3mm+ irrigation within 7 days.', 'n': 0}, 'Indigo Onset 10GR': {'r': {'Granular': [1.5, 3.0]}, 'u': 'kg', 'a': 'Prodiamine 10g/kg granular', 't': 'Water in. Wash into soil profile. Granular pre-emergent.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Liquid Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Insecticide DB"
+        unique_id: lawn_db_insecticide
+        state: "insecticide"
+        attributes:
+          products: |
+            {{ {'Acelepryn GR': {'r': {'Granular': [1.5, 1.5]}, 'u': 'kg', 'a': 'Chlorantraniliprole 0.5g/kg', 't': 'Water in with 3mm+. Long-term grub control. Apply Sep/Oct + Mar/Apr.', 'n': 0}, 'Acelepryn Liquid': {'r': {'Foliar Spray': [8, 15], 'Soil Drench': [8, 15]}, 'u': 'ml', 'a': 'Chlorantraniliprole 200g/L', 't': 'Water in for root grubs. Dry on leaf for leaf-feeders.', 'n': 0}, 'Quarterback': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': 'Chlorantraniliprole', 't': 'Dry on leaf. Fast knockdown for Armyworm and surface pests. Varies by label.', 'n': 0}, 'Turf Culture Monarch G': {'r': {'Granular': [1.5, 1.5]}, 'u': 'kg', 'a': 'Fipronil 1g/kg granular', 't': 'Water in. Non-repellent control for ants / mole crickets.', 'n': 0}, 'Surefire Fipronil Granular': {'r': {'Granular': [1.5, 1.5]}, 'u': 'kg', 'a': 'Fipronil 1g/kg granular', 't': 'Water in. Highly effective for funnel ants and nesting ants.', 'n': 0}, 'Proforce Rumbler 100SC': {'r': {'Foliar Spray': [12, 44], 'Soil Drench': [12, 44]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Dry on leaf for surface pests. Water in heavily for Black Beetle.', 'n': 0}, 'Surefire Fivestar': {'r': {'Foliar Spray': [12, 44], 'Soil Drench': [12, 44]}, 'u': 'ml', 'a': 'Bifenthrin 100g/L', 't': 'Liquid Bifenthrin for fast-acting knockdown of insects.', 'n': 0}, 'Echelon Duo': {'r': {'Soil Drench': [15, 15]}, 'u': 'ml', 'a': 'Bifenthrin + Prodiamine', 't': 'Water in. Dual action: pre-emergent weed + insect control.', 'n': 0}, 'Custom': {'r': {'Granular': [0, 0], 'Foliar Spray': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Fungicide DB"
+        unique_id: lawn_db_fungicide
+        state: "fungicide"
+        attributes:
+          products: |
+            {{ {'Impala': {'r': {'Foliar Spray': [60, 60], 'Soil Drench': [60, 60]}, 'u': 'ml', 'a': 'Iprodione 250g/L', 't': 'Water in for root diseases. Dry on leaf for foliar diseases.', 'n': 0}, 'Adama Bumper 625': {'r': {'Foliar Spray': [10, 20], 'Soil Drench': [10, 20]}, 'u': 'ml', 'a': 'Propiconazole 625g/L', 't': 'Systemic broad-spectrum. Leave on leaf for foliar, water lightly for root.', 'n': 0}, 'Dedicate Turf Fungicide': {'r': {'Foliar Spray': [20, 30], 'Soil Drench': [20, 30]}, 'u': 'ml', 'a': 'Tebuconazole 430g/L', 't': 'Broad-spectrum systemic. Water lightly for roots, dry for leaf spots.', 'n': 0}, 'Chlortan 1040': {'r': {'Foliar Spray': [130, 200]}, 'u': 'ml', 'a': 'Chlorothalonil 720g/L', 't': 'Dry on leaf. Contact fungicide. Must dry to form protective barrier.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Soil Drench': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Herbicide DB"
+        unique_id: lawn_db_herbicide
+        state: "herbicide"
+        attributes:
+          products: |
+            {{ {'Bow and Arrow': {'r': {'Foliar Spray': [50, 50], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA + Clopyralid + Diflufenican', 't': 'Dry on leaf. Slower knockdown but destroys root system. Safe on Buffalo.', 'n': 0}, 'Indigo Contra M Duo': {'r': {'Foliar Spray': [50, 50], 'Spot Spray': [3, 6]}, 'u': 'ml', 'a': 'MCPA + Dicamba', 't': 'Dry on leaf. Do not irrigate for at least 24 hours.', 'n': 0}, 'Cannonade 212': {'r': {'Foliar Spray': [20, 30], 'Spot Spray': [2, 4]}, 'u': 'ml', 'a': 'Bromoxynil + MCPA', 't': 'Dry on leaf. Selective herbicide. Leave on the leaf to absorb.', 'n': 0}, 'Crabgrass & Clover Killer': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': 'Post-emergent selective', 't': 'Dry on leaf. Selective post-emergent. Varies by label.', 'n': 0}, 'Halo-Force 750WG': {'r': {'Foliar Spray': [1.3, 1.3], 'Spot Spray': [0.5, 1.0]}, 'u': 'g', 'a': 'Halosulfuron 750g/kg', 't': 'Dry on leaf. Needs a surfactant. Do not water for 24 hours.', 'n': 0}, 'Envu Tribute': {'r': {'Foliar Spray': [20, 20], 'Spot Spray': [2, 4]}, 'u': 'ml', 'a': 'Foramsulfuron 100g/L', 't': 'Dry on leaf. Selective grass weed control in couch.', 'n': 0}, 'Poa Chek': {'r': {'Foliar Spray': [15, 15], 'Spot Spray': [1, 3]}, 'u': 'ml', 'a': 'Endothal 175g/L', 't': 'Dry on leaf. Apply to actively growing winter grass (Poa annua).', 'n': 0}, 'Fusilade Forte': {'r': {'Foliar Spray': [13, 65], 'Spot Spray': [3, 10]}, 'u': 'ml', 'a': 'Fluazifop-p 128g/L', 't': 'Dry on leaf. Kills grass invading garden beds. Not for main lawn.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0], 'Spot Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Plant Growth Regulator DB"
+        unique_id: lawn_db_pgr
+        state: "pgr"
+        attributes:
+          products: |
+            {{ {'Astro 120 ME': {'r': {'Foliar Spray': [10, 40]}, 'u': 'ml', 'a': 'Trinexapac-ethyl 120g/L', 't': 'Dry on leaf. Foliar absorbed. Do not water in or mow for 24hrs.', 'n': 0}, 'LawnPride Colourmaxx': {'r': {'Foliar Spray': [20, 30]}, 'u': 'ml', 'a': 'Turf pigment / colourant', 't': 'Dry on leaf. Allow to dry completely. Do not apply before rain.', 'n': 0}, 'Custom': {'r': {'Foliar Spray': [0, 0]}, 'u': 'ml', 'a': '-', 't': 'Set your own rate.', 'n': 0}} }}
+
+      - name: "Kelp / Seaweed Product Info"
+        unique_id: lawn_product_info_kelp
+        state: |
+          {% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_kelp') %}
+            {% set method = states('input_select.lawn_app_method_kelp') %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_kelp') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_kelp') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_kelp') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ states('input_select.lawn_app_method_kelp') }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_kelp') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_kelp') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_kelp') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_kelp') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_kelp'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_kelp'), [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_kelp'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_kelp'), [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_kelp'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Granular Fertiliser Product Info"
+        unique_id: lawn_product_info_granular_fert
+        state: |
+          {% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_granular_fert') %}
+            {% set method = 'Broadcast' %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_granular_fert') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_granular_fert') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_granular_fert') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ 'Broadcast' }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_granular_fert') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_granular_fert') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_granular_fert') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_granular_fert') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_granular_fert'), {}) %}
+              {% set r = p.get('r', {}).get('Broadcast', [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_granular_fert'), {}) %}
+              {% set r = p.get('r', {}).get('Broadcast', [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Liquid Fertiliser Product Info"
+        unique_id: lawn_product_info_liquid_fert
+        state: |
+          {% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_liquid_fert') %}
+            {% set method = states('input_select.lawn_app_method_liquid_fert') %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_liquid_fert') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_liquid_fert') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_liquid_fert') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ states('input_select.lawn_app_method_liquid_fert') }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_liquid_fert') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_liquid_fert') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_liquid_fert') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_liquid_fert') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_liquid_fert'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_liquid_fert'), [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_liquid_fert'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_liquid_fert'), [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Humate / Humic Acid Product Info"
+        unique_id: lawn_product_info_humate
+        state: |
+          {% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_humate') %}
+            {% set method = states('input_select.lawn_app_method_humate') %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_humate') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_humate') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_humate') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ states('input_select.lawn_app_method_humate') }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_humate') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_humate') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_humate') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_humate') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_humate'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_humate'), [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_humate'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_humate'), [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_humate'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Soil Wetter Product Info"
+        unique_id: lawn_product_info_soil_wetter
+        state: |
+          {% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_soil_wetter') %}
+            {% set method = 'Soil Drench' %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_soil_wetter') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_soil_wetter') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_soil_wetter') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ 'Soil Drench' }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_soil_wetter') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_soil_wetter') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_soil_wetter') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_soil_wetter') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_soil_wetter'), {}) %}
+              {% set r = p.get('r', {}).get('Soil Drench', [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_soil_wetter'), {}) %}
+              {% set r = p.get('r', {}).get('Soil Drench', [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_soil_wetter'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Pre-emergent Herbicide Product Info"
+        unique_id: lawn_product_info_preemergent
+        state: |
+          {% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_preemergent') %}
+            {% set method = states('input_select.lawn_app_method_preemergent') %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_preemergent') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_preemergent') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_preemergent') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ states('input_select.lawn_app_method_preemergent') }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_preemergent') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_preemergent') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_preemergent') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_preemergent') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_preemergent'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_preemergent'), [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_preemergent'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_preemergent'), [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_preemergent'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Insecticide Product Info"
+        unique_id: lawn_product_info_insecticide
+        state: |
+          {% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_insecticide') %}
+            {% set method = states('input_select.lawn_app_method_insecticide') %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_insecticide') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_insecticide') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_insecticide') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ states('input_select.lawn_app_method_insecticide') }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_insecticide') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_insecticide') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_insecticide') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_insecticide') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_insecticide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_insecticide'), [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_insecticide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_insecticide'), [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_insecticide'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Fungicide Product Info"
+        unique_id: lawn_product_info_fungicide
+        state: |
+          {% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_fungicide') %}
+            {% set method = states('input_select.lawn_app_method_fungicide') %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_fungicide') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_fungicide') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_fungicide') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ states('input_select.lawn_app_method_fungicide') }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_fungicide') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_fungicide') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_fungicide') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_fungicide') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_fungicide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_fungicide'), [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_fungicide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_fungicide'), [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_fungicide'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Herbicide Product Info"
+        unique_id: lawn_product_info_herbicide
+        state: |
+          {% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_herbicide') %}
+            {% set method = states('input_select.lawn_app_method_herbicide') %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_herbicide') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_herbicide') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_herbicide') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ states('input_select.lawn_app_method_herbicide') }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_herbicide') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_herbicide') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_herbicide') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_herbicide') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_herbicide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_herbicide'), [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_herbicide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_herbicide'), [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_herbicide'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+      - name: "Plant Growth Regulator Product Info"
+        unique_id: lawn_product_info_pgr
+        state: |
+          {% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+          {% if db is mapping %}
+            {% set sel = states('input_select.lawn_product_db_pgr') %}
+            {% set method = 'Foliar Spray' %}
+            {% set p = db.get(sel, {}) %}
+            {% set r = p.get('r', {}).get(method, [0,0]) if p else [0,0] %}
+            {% if r[1] > 0 %}{{ r[0] }}-{{ r[1] }} {{ p.u }}/100m² ({{ method }})
+            {% elif sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_pgr') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }} · Manual rate
+            {% else %}N/A for {{ method }}
+            {% endif %}
+          {% else %}Loading...
+          {% endif %}
+        attributes:
+          product: |
+            {% set sel = states('input_select.lawn_product_db_pgr') %}
+            {% if sel == 'Custom' %}{% set cn = states('input_text.lawn_custom_name_pgr') %}{{ cn if cn not in ['', 'unknown', 'unavailable'] else 'Custom' }}{% else %}{{ sel }}{% endif %}
+          method: "{{ 'Foliar Spray' }}"
+          active_ingredient: |
+            {% set sel = states('input_select.lawn_product_db_pgr') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_ai_pgr') or '-' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+            {{ db.get(sel, {}).get('a', '-') if db is mapping else '-' }}{% endif %}
+          notes: |
+            {% set sel = states('input_select.lawn_product_db_pgr') %}
+            {% if sel == 'Custom' %}{{ states('input_text.lawn_custom_notes_pgr') or 'Set your own rate.' }}
+            {% else %}{% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+            {{ db.get(sel, {}).get('t', '') if db is mapping else '' }}{% endif %}
+          rate_low: |
+            {% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_pgr'), {}) %}
+              {% set r = p.get('r', {}).get('Foliar Spray', [0,0]) if p else [0,0] %}
+              {{ r[0] }}
+            {% else %}0{% endif %}
+          rate_high: |
+            {% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_pgr'), {}) %}
+              {% set r = p.get('r', {}).get('Foliar Spray', [0,0]) if p else [0,0] %}
+              {{ r[1] }}
+            {% else %}0{% endif %}
+          unit: |
+            {% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_pgr'), {}).get('u', 'ml') if db is mapping else 'ml' }}
+
+# =============================================================================
+# SCRIPTS — Task Logging (with Inventory Auto-Deduct + Nitrogen Tracking)
+# =============================================================================
+
+script:
+
+  lawn_log_mowing:
+    alias: "Log Mowing"
+    icon: mdi:mower-on
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_mowing
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Lawn Mowing"
+          message: |
+            Mowed lawn (Total: {{ states('sensor.lawn_total_area') }}m²).
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_mowing
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_kelp:
+    alias: "Log Kelp"
+    icon: mdi:seed
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_kelp
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Kelp Application"
+          message: |
+            Applied kelp at {{ states('input_number.lawn_rate_kelp') }}{{ states('input_select.lawn_unit_kelp') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_kelp') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_kelp') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_kelp
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_kelp
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_kelp') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_kelp') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_granular_fert:
+    alias: "Log Granular Fert"
+    icon: mdi:shaker-outline
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_granular_fert
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Granular Fertiliser"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_granular_fert') }}{{ states('input_select.lawn_unit_granular_fert') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_granular_fert') | float * size) / 100) | round(2) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_granular_fert') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_granular_fert
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_granular_fert
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_granular_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(2) %}
+            {% set current = states('input_number.lawn_stock_granular_fert') | float(0) %}
+            {{ [current - used, 0] | max }}
+      # ── Nitrogen Tracking ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_nitrogen_applied_season
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_granular_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set n_frac = states('input_number.lawn_granular_fert_n_fraction') | float(0.20) %}
+            {% set kg_applied = (rate * area / 100) %}
+            {% set n_kg = kg_applied * n_frac %}
+            {{ (states('input_number.lawn_nitrogen_applied_season') | float(0) + n_kg) | round(2) }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_liquid_fert:
+    alias: "Log Liquid Fert"
+    icon: mdi:water-circle
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_liquid_fert
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Liquid Fertiliser"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_liquid_fert') }}{{ states('input_select.lawn_unit_liquid_fert') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_liquid_fert') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_liquid_fert') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_liquid_fert
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_liquid_fert
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_liquid_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_liquid_fert') | float(0) %}
+            {{ [current - used, 0] | max }}
+      # ── Nitrogen Tracking ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_nitrogen_applied_season
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_liquid_fert') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set n_frac = states('input_number.lawn_liquid_fert_n_fraction') | float(0.05) %}
+            {% set ml_applied = (rate * area / 100) %}
+            {% set n_kg = (ml_applied / 1000) * n_frac %}
+            {{ (states('input_number.lawn_nitrogen_applied_season') | float(0) + n_kg) | round(3) }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_humate:
+    alias: "Log Humate"
+    icon: mdi:cup-water
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_humate
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Humate Application"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_humate') }}{{ states('input_select.lawn_unit_humate') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_humate') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_humate') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_humate
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_humate
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_humate') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_humate') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_soil_wetter:
+    alias: "Log Soil Wetter"
+    icon: mdi:water-percent
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_soil_wetter
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Soil Wetter"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_soil_wetter') }}{{ states('input_select.lawn_unit_soil_wetter') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_soil_wetter') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_soil_wetter') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_soil_wetter
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_soil_wetter
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_soil_wetter') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_soil_wetter') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_preemergent:
+    alias: "Log Pre-emergent"
+    icon: mdi:shield-bug
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_preemergent
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Pre-emergent"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_preemergent') }}{{ states('input_select.lawn_unit_preemergent') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_preemergent') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_preemergent') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_preemergent
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_preemergent
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_preemergent') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_preemergent') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_insecticide:
+    alias: "Log Insecticide"
+    icon: mdi:bug-outline
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_insecticide
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Insecticide"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_insecticide') }}{{ states('input_select.lawn_unit_insecticide') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_insecticide') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_insecticide') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_insecticide
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_insecticide
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_insecticide') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_insecticide') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_fungicide:
+    alias: "Log Fungicide"
+    icon: mdi:mushroom-outline
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_fungicide
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Fungicide"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_fungicide') }}{{ states('input_select.lawn_unit_fungicide') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_fungicide') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_fungicide') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_fungicide
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_fungicide
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_fungicide') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_fungicide') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_herbicide:
+    alias: "Log Herbicide"
+    icon: mdi:sprout-outline
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_herbicide
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "Herbicide"
+          message: |
+            Applied at {{ states('input_number.lawn_rate_herbicide') }}{{ states('input_select.lawn_unit_herbicide') }}/100m².
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_herbicide') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_herbicide') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_herbicide
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_herbicide
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_herbicide') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_herbicide') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  lawn_log_pgr:
+    alias: "Log PGR"
+    icon: mdi:expansion-card-variant
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.lawn_last_pgr
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: logbook.log
+        data:
+          name: "PGR Application"
+          message: |
+            Applied PGR at {{ states('input_number.lawn_rate_pgr') }}{{ states('input_select.lawn_unit_pgr') }}/100m²
+            ({{ states('input_number.pgr_gdd_accumulated') }} GDD — resetting to 0).
+            {% set areas = namespace(list='') %}
+            {% for i in range(1, 6) %}
+              {% set size = states('input_number.lawn_area_' ~ i ~ '_size') | float(0) %}
+              {% if size > 0 %}
+                {% set name = states('input_text.lawn_area_' ~ i ~ '_name') %}
+                {% set amount = ((states('input_number.lawn_rate_pgr') | float * size) / 100) | round(1) %}
+                {% set areas.list = areas.list ~ ' / ' ~ name ~ ' (' ~ size ~ 'm²): ' ~ amount ~ states('input_select.lawn_unit_pgr') %}
+              {% endif %}
+            {% endfor %}
+            {{ areas.list }}
+            Notes: {{ states('input_text.lawn_task_notes') or 'None' }}
+          entity_id: input_datetime.lawn_last_pgr
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.pgr_gdd_accumulated
+        data:
+          value: 0
+      # ── Inventory Auto-Deduct ──
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_stock_pgr
+        data:
+          value: |
+            {% set rate = states('input_number.lawn_rate_pgr') | float(0) %}
+            {% set area = states('sensor.lawn_total_area') | float(0) %}
+            {% set used = (rate * area / 100) | round(1) %}
+            {% set current = states('input_number.lawn_stock_pgr') | float(0) %}
+            {{ [current - used, 0] | max }}
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.lawn_task_notes
+        data:
+          value: ""
+
+  # ── Utility Script: Reset Seasonal Nitrogen Counter ──────────────────────
+  lawn_reset_nitrogen_season:
+    alias: "Reset Seasonal Nitrogen"
+    icon: mdi:atom-variant
+    sequence:
+      - action: logbook.log
+        data:
+          name: "Nitrogen Reset"
+          message: >
+            Seasonal nitrogen counter reset from {{ states('input_number.lawn_nitrogen_applied_season') }}kg N.
+          entity_id: input_number.lawn_nitrogen_applied_season
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_nitrogen_applied_season
+        data:
+          value: 0
+
+
+# =============================================================================
+# AUTOMATIONS — Temperature, GDD, Reminders, Irrigation, Stock Alerts
+# =============================================================================
+
+automation:
+
+  # ── Temperature Tracking (with robust unavailable/unknown guards) ────────
+
+  - id: lawn_temp_track_max
+    alias: "Lawn: Track Daily Max"
+    trigger:
+      - platform: state
+        entity_id: *temp_sensor    # ⚙️ USER-CONFIG
+    condition:
+      - condition: template
+        value_template: |
+          {% set val = states('sensor.weatherflow_sensors_temperature') %}
+          {{ val not in ['unavailable', 'unknown']
+             and val | float(0) > states('input_number.lawn_temp_daily_max') | float(-99) }}
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_max
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
+
+  - id: lawn_temp_track_min
+    alias: "Lawn: Track Daily Min"
+    trigger:
+      - platform: state
+        entity_id: *temp_sensor    # ⚙️ USER-CONFIG
+    condition:
+      - condition: template
+        value_template: |
+          {% set val = states('sensor.weatherflow_sensors_temperature') %}
+          {{ val not in ['unavailable', 'unknown']
+             and val | float(99) < states('input_number.lawn_temp_daily_min') | float(99) }}
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_min
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
+
+  # ── MERGED: Daily GDD Accumulate + Temperature Reset ─────────────────────
+  # Runs at 23:59 to capture the full day's extremes before resetting.
+  # Eliminates the v2.1 race condition between separate 00:00:00 / 00:00:30 triggers.
+
+  - id: lawn_daily_gdd_cycle
+    alias: "Lawn: Daily GDD Accumulate & Reset"
+    trigger:
+      - platform: time
+        at: "23:59:00"
+    action:
+      # Step 1: Accumulate today's GDD onto the running total
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.pgr_gdd_accumulated
+        data:
+          value: |
+            {{ (states('input_number.pgr_gdd_accumulated') | float(0)
+                + states('sensor.lawn_gdd_today') | float(0)) | round(1) }}
+      # Step 2: Brief delay to ensure step 1 completes
+      - delay: "00:00:05"
+      # Step 3: Reset daily max/min to current temperature
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_max
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_temp_daily_min
+        data:
+          # ⚙️ USER-CONFIG: entity ID below
+          value: "{{ states('sensor.weatherflow_sensors_temperature') | float(0) | round(1) }}"
+
+  # ── PGR GDD Alert ────────────────────────────────────────────────────────
+
+  - id: lawn_pgr_gdd_alert
+    alias: "Lawn: PGR GDD Alert"
+    trigger:
+      - platform: numeric_state
+        entity_id: input_number.pgr_gdd_accumulated
+        above: input_number.pgr_gdd_target
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_notify_pgr
+        state: "on"
+    action:
+      - action: *notify_service    # ⚙️ USER-CONFIG
+        data:
+          title: "🌱 PGR Application Due"
+          message: |
+            GDD Target Reached! {{ states('input_number.pgr_gdd_accumulated') }} / {{ states('input_number.pgr_gdd_target') }} GDD.
+            Forecast: Apply by {{ states('sensor.lawn_pgr_forecast_date') }}.
+
+  # ── Task Reminders (all use action: instead of service:) ──────────────────
+
+  - id: lawn_mowing_reminder
+    alias: "Lawn: Mowing Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_mowing
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_mowing
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_mowing')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_mowing') | float(7) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service    # ⚙️ USER-CONFIG
+        data:
+          title: "🚜 Time to Mow"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_mowing'))) / 86400) | round(0) }} days since last mow.
+
+  - id: lawn_kelp_reminder
+    alias: "Lawn: Kelp Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_kelp
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_kelp
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_kelp')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_kelp') | float(14) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "🌿 Kelp Application Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_kelp'))) / 86400) | round(0) }} days overdue.
+
+  - id: lawn_granular_fert_reminder
+    alias: "Lawn: Granular Fert Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_granular_fert
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_granular_fert
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_granular_fert')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_granular_fert') | float(60) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "🥣 Granular Fertiliser Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_granular_fert'))) / 86400) | round(0) }} days overdue.
+
+  - id: lawn_liquid_fert_reminder
+    alias: "Lawn: Liquid Fert Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_liquid_fert
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_liquid_fert
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_liquid_fert')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_liquid_fert') | float(14) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "💧 Liquid Fertiliser Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_liquid_fert'))) / 86400) | round(0) }} days overdue.
+
+  - id: lawn_humate_reminder
+    alias: "Lawn: Humate Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_humate
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_humate
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_humate')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_humate') | float(30) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "☕ Humate Application Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_humate'))) / 86400) | round(0) }} days overdue.
+
+  - id: lawn_soil_wetter_reminder
+    alias: "Lawn: Soil Wetter Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_soil_wetter
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_soil_wetter
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_soil_wetter')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_soil_wetter') | float(90) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "💦 Soil Wetter Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_soil_wetter'))) / 86400) | round(0) }} days overdue. Critical for Perth sandy soil!
+
+  - id: lawn_preemergent_reminder
+    alias: "Lawn: Pre-emergent Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_preemergent
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_preemergent
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_preemergent')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_preemergent') | float(120) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "🛡️ Pre-emergent Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_preemergent'))) / 86400) | round(0) }} days overdue.
+
+  - id: lawn_insecticide_reminder
+    alias: "Lawn: Insecticide Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_insecticide
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_insecticide
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_insecticide')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_insecticide') | float(90) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "🐛 Insecticide Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_insecticide'))) / 86400) | round(0) }} days overdue.
+
+  - id: lawn_fungicide_reminder
+    alias: "Lawn: Fungicide Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_fungicide
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_fungicide
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_fungicide')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_fungicide') | float(30) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "🍄 Fungicide Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_fungicide'))) / 86400) | round(0) }} days overdue.
+
+  - id: lawn_herbicide_reminder
+    alias: "Lawn: Herbicide Reminder"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_product_herbicide
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.lawn_notify_herbicide
+        state: "on"
+      - condition: template
+        value_template: |
+          {% set last = as_timestamp(states('input_datetime.lawn_last_herbicide')) | float(0) %}
+          {% set interval = states('input_number.lawn_interval_herbicide') | float(90) %}
+          {{ (now().timestamp() - last) > (interval * 86400) }}
+    action:
+      - action: *notify_service
+        data:
+          title: "🌱 Herbicide Due"
+          message: >
+            {{ ((now().timestamp() - as_timestamp(states('input_datetime.lawn_last_herbicide'))) / 86400) | round(0) }} days overdue.
+
+  # ── NEW: Low Stock Alert ──────────────────────────────────────────────────
+
+  - id: lawn_low_stock_alert
+    alias: "Lawn: Low Stock Alert"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.lawn_low_stock_items
+        above: 0
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_notify_low_stock
+        state: "on"
+    action:
+      - action: *notify_service
+        data:
+          title: "📦 Low Lawn Care Stock"
+          message: |
+            {{ states('sensor.lawn_low_stock_items') }} product(s) running low:
+            {{ state_attr('sensor.lawn_low_stock_items', 'details') }}
+
+  # ── NEW: Irrigation Suggestion Notification ──────────────────────────────
+  # Sends a notification if irrigation is recommended. Does NOT auto-control
+  # valves (add your own switch actions if you have relay-controlled valves).
+
+  - id: lawn_irrigation_notify
+    alias: "Lawn: Irrigation Suggestion"
+    trigger:
+      - platform: time
+        at: "05:00:00"
+    condition:
+      - condition: state
+        entity_id: input_boolean.lawn_notify_irrigation
+        state: "on"
+      - condition: numeric_state
+        entity_id: sensor.lawn_irrigation_minutes
+        above: 0
+      # Suppress if soil is already wet (gracefully skips if sensor unavailable)
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: sensor.lawn_avg_soil_moisture
+            state: "unavailable"
+          - condition: numeric_state
+            entity_id: sensor.lawn_avg_soil_moisture
+            below: input_number.lawn_moisture_threshold
+    action:
+      - action: *notify_service
+        data:
+          title: "💧 Irrigation Recommended"
+          message: |
+            ET₀: {{ states('sensor.lawn_et_estimate') }}mm · Rain forecast: {{ states('sensor.lawn_rain_forecast') }}mm
+            Suggested runtime: {{ states('sensor.lawn_irrigation_minutes') }} minutes.
+            {% if states('sensor.lawn_avg_soil_moisture') != 'unavailable' %}
+            Soil moisture: {{ states('sensor.lawn_avg_soil_moisture') }}%
+            {% endif %}
+
+
+  # ── Product Database Auto-fill Automations ─────────────────────────────
+  # When you select a product, the rate, unit, and N-fraction auto-populate.
+  # Select 'Custom' to disable auto-fill and set your own values.
+
+  # ── Product Auto-fill Automations (read from DB sensors) ────────────
+  - id: lawn_product_autofill_kelp
+    alias: "Lawn: Auto-fill Kelp / Seaweed Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_kelp
+      - platform: state
+        entity_id: input_select.lawn_app_method_kelp
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_kelp') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_kelp
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_kelp'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_kelp'), [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_kelp') }}
+            {% else %}{{ states('input_number.lawn_rate_kelp') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_kelp
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_kelp', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_kelp'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_kelp') }}
+  - id: lawn_product_autofill_granular_fert
+    alias: "Lawn: Auto-fill Granular Fertiliser Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_granular_fert
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_granular_fert') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_granular_fert
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_granular_fert'), {}) %}
+              {% set r = p.get('r', {}).get('Broadcast', [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_granular_fert') }}
+            {% else %}{{ states('input_number.lawn_rate_granular_fert') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_granular_fert
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_granular_fert') }}
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_granular_fert_n_fraction
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_granular_fert', 'products') %}
+            {% if db is mapping %}
+              {{ db.get(states('input_select.lawn_product_db_granular_fert'), {}).get('n', 0) }}
+            {% else %}{{ states('input_number.lawn_granular_fert_n_fraction') }}{% endif %}
+  - id: lawn_product_autofill_liquid_fert
+    alias: "Lawn: Auto-fill Liquid Fertiliser Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_liquid_fert
+      - platform: state
+        entity_id: input_select.lawn_app_method_liquid_fert
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_liquid_fert') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_liquid_fert
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_liquid_fert'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_liquid_fert'), [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_liquid_fert') }}
+            {% else %}{{ states('input_number.lawn_rate_liquid_fert') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_liquid_fert
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_liquid_fert') }}
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_liquid_fert_n_fraction
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_liquid_fert', 'products') %}
+            {% if db is mapping %}
+              {{ db.get(states('input_select.lawn_product_db_liquid_fert'), {}).get('n', 0) }}
+            {% else %}{{ states('input_number.lawn_liquid_fert_n_fraction') }}{% endif %}
+  - id: lawn_product_autofill_humate
+    alias: "Lawn: Auto-fill Humate / Humic Acid Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_humate
+      - platform: state
+        entity_id: input_select.lawn_app_method_humate
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_humate') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_humate
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_humate'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_humate'), [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_humate') }}
+            {% else %}{{ states('input_number.lawn_rate_humate') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_humate
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_humate', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_humate'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_humate') }}
+  - id: lawn_product_autofill_soil_wetter
+    alias: "Lawn: Auto-fill Soil Wetter Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_soil_wetter
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_soil_wetter') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_soil_wetter
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_soil_wetter'), {}) %}
+              {% set r = p.get('r', {}).get('Soil Drench', [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_soil_wetter') }}
+            {% else %}{{ states('input_number.lawn_rate_soil_wetter') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_soil_wetter
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_soil_wetter', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_soil_wetter'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_soil_wetter') }}
+  - id: lawn_product_autofill_preemergent
+    alias: "Lawn: Auto-fill Pre-emergent Herbicide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_preemergent
+      - platform: state
+        entity_id: input_select.lawn_app_method_preemergent
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_preemergent') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_preemergent
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_preemergent'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_preemergent'), [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_preemergent') }}
+            {% else %}{{ states('input_number.lawn_rate_preemergent') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_preemergent
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_preemergent', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_preemergent'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_preemergent') }}
+  - id: lawn_product_autofill_insecticide
+    alias: "Lawn: Auto-fill Insecticide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_insecticide
+      - platform: state
+        entity_id: input_select.lawn_app_method_insecticide
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_insecticide') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_insecticide
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_insecticide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_insecticide'), [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_insecticide') }}
+            {% else %}{{ states('input_number.lawn_rate_insecticide') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_insecticide
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_insecticide', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_insecticide'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_insecticide') }}
+  - id: lawn_product_autofill_fungicide
+    alias: "Lawn: Auto-fill Fungicide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_fungicide
+      - platform: state
+        entity_id: input_select.lawn_app_method_fungicide
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_fungicide') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_fungicide
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_fungicide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_fungicide'), [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_fungicide') }}
+            {% else %}{{ states('input_number.lawn_rate_fungicide') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_fungicide
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_fungicide', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_fungicide'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_fungicide') }}
+  - id: lawn_product_autofill_herbicide
+    alias: "Lawn: Auto-fill Herbicide Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_herbicide
+      - platform: state
+        entity_id: input_select.lawn_app_method_herbicide
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_herbicide') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_herbicide
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_herbicide'), {}) %}
+              {% set r = p.get('r', {}).get(states('input_select.lawn_app_method_herbicide'), [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_herbicide') }}
+            {% else %}{{ states('input_number.lawn_rate_herbicide') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_herbicide
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_herbicide', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_herbicide'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_herbicide') }}
+  - id: lawn_product_autofill_pgr
+    alias: "Lawn: Auto-fill Plant Growth Regulator Rate"
+    trigger:
+      - platform: state
+        entity_id: input_select.lawn_product_db_pgr
+    condition:
+      - condition: template
+        value_template: "{{ states('input_select.lawn_product_db_pgr') != 'Custom' }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.lawn_rate_pgr
+        data:
+          value: |
+            {% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+            {% if db is mapping %}
+              {% set p = db.get(states('input_select.lawn_product_db_pgr'), {}) %}
+              {% set r = p.get('r', {}).get('Foliar Spray', [0,0]) if p else [0,0] %}
+              {{ ((r[0] + r[1]) / 2) | round(1) if r[1] > 0 else states('input_number.lawn_rate_pgr') }}
+            {% else %}{{ states('input_number.lawn_rate_pgr') }}{% endif %}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.lawn_unit_pgr
+        data:
+          option: |
+            {% set db = state_attr('sensor.lawn_db_pgr', 'products') %}
+            {{ db.get(states('input_select.lawn_product_db_pgr'), {}).get('u', 'ml') if db is mapping else states('input_select.lawn_unit_pgr') }}
+
+  # ── First-Run Default Setter ──────────────────────────────────────────
+  # Runs once on HA start. If all product toggles are off (fresh install),
+  # enables all products and notifications so the dashboard isn't empty.
+  # Safe on subsequent restarts — skips if ANY toggle is already on.
+  - id: lawn_first_run_defaults
+    alias: "Lawn: First-Run Default Setter"
+    trigger:
+      - platform: homeassistant
+        event: start
+    condition:
+      - condition: template
+        value_template: |
+          {% set toggles = [
+            'input_boolean.lawn_product_mowing',
+            'input_boolean.lawn_product_kelp',
+            'input_boolean.lawn_product_pgr',
+            'input_boolean.lawn_product_granular_fert',
+            'input_boolean.lawn_product_liquid_fert',
+            'input_boolean.lawn_product_humate',
+            'input_boolean.lawn_product_soil_wetter',
+            'input_boolean.lawn_product_preemergent',
+            'input_boolean.lawn_product_insecticide',
+            'input_boolean.lawn_product_fungicide',
+            'input_boolean.lawn_product_herbicide'
+          ] %}
+          {{ toggles | map('states') | select('eq', 'on') | list | length == 0 }}
+    action:
+      - action: input_boolean.turn_on
+        target:
+          entity_id:
+            - input_boolean.lawn_product_mowing
+            - input_boolean.lawn_product_kelp
+            - input_boolean.lawn_product_pgr
+            - input_boolean.lawn_product_granular_fert
+            - input_boolean.lawn_product_liquid_fert
+            - input_boolean.lawn_product_humate
+            - input_boolean.lawn_product_soil_wetter
+            - input_boolean.lawn_product_preemergent
+            - input_boolean.lawn_product_insecticide
+            - input_boolean.lawn_product_fungicide
+            - input_boolean.lawn_product_herbicide
+            - input_boolean.lawn_notify_mowing
+            - input_boolean.lawn_notify_kelp
+            - input_boolean.lawn_notify_granular_fert
+            - input_boolean.lawn_notify_liquid_fert
+            - input_boolean.lawn_notify_humate
+            - input_boolean.lawn_notify_soil_wetter
+            - input_boolean.lawn_notify_preemergent
+            - input_boolean.lawn_notify_insecticide
+            - input_boolean.lawn_notify_fungicide
+            - input_boolean.lawn_notify_herbicide
+            - input_boolean.lawn_notify_pgr
+            - input_boolean.lawn_notify_low_stock
+            - input_boolean.lawn_notify_irrigation
