@@ -1,4 +1,4 @@
-title: Turf Management v3
+title: Turf Management v3.8.0
 views:
 
   # ═══════════════════════════════════════════════════════════════════════════
@@ -1152,6 +1152,9 @@ views:
   # ═══════════════════════════════════════════════════════════════════════════
   # Requires: custom:apexcharts-card (HACS) for the dual-axis chart.
   # The statistics-graph card is built-in and works without HACS.
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VIEW 3: PRODUCTS
+  # ═══════════════════════════════════════════════════════════════════════════
   - title: Products
     path: products
     icon: mdi:flask-outline
@@ -1183,22 +1186,365 @@ views:
             --secondary-text-color: #8fb89a;
             --primary-color: #4aa35b;
             --accent-color: #6fcf80;
+            --divider-color: rgba(74,163,91,0.25);
+            --disabled-text-color: #4d7058;
+            --paper-item-icon-color: #4aa35b;
+            --slider-color: #4aa35b;
+            --switch-checked-color: #4aa35b;
           }
     cards:
+
+      # ── Stack 1: Product Selection ──────────────────────────────────────
       - type: vertical-stack
         cards:
           - type: markdown
             content: |
-              ## 🧪 Enabled Products
-              Toggle products on/off to show or hide them from the Dashboard and Inventory views. Disabled products also suppress their reminders.
+              ## 📋 Product Selection
             card_mod:
               style: >
                 ha-card { background: transparent; box-shadow: none; border:
                 none; }
 
                 h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
+                text-transform: uppercase;
+                     letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
+                     border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+          - type: entities
+            title: Selected Products
+            show_header_toggle: false
+            entities:
+              - entity: input_select.lawn_product_db_kelp
+                name: "Kelp / Seaweed"
+                icon: mdi:seed
+              - entity: input_select.lawn_product_db_granular_fert
+                name: "Granular Fertiliser"
+                icon: mdi:shaker-outline
+              - entity: input_select.lawn_product_db_liquid_fert
+                name: "Liquid Fertiliser"
+                icon: mdi:water-circle
+              - entity: input_select.lawn_product_db_humate
+                name: "Humate / Humic Acid"
+                icon: mdi:cup-water
+              - entity: input_select.lawn_product_db_soil_wetter
+                name: "Soil Wetter"
+                icon: mdi:water-percent
+              - entity: input_select.lawn_product_db_preemergent
+                name: "Pre-emergent"
+                icon: mdi:shield-bug
+              - entity: input_select.lawn_product_db_insecticide
+                name: "Insecticide"
+                icon: mdi:bug-outline
+              - entity: input_select.lawn_product_db_fungicide
+                name: "Fungicide"
+                icon: mdi:mushroom-outline
+              - entity: input_select.lawn_product_db_herbicide
+                name: "Herbicide"
+                icon: mdi:sprout-outline
+              - entity: input_select.lawn_product_db_pgr
+                name: "PGR"
+                icon: mdi:expansion-card-variant
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+          - type: entities
+            title: Application Method
+            show_header_toggle: false
+            entities:
+              - entity: input_select.lawn_app_method_kelp
+                name: "Kelp / Seaweed"
+                icon: mdi:seed
+              - entity: input_select.lawn_app_method_liquid_fert
+                name: "Liquid Fertiliser"
+                icon: mdi:water-circle
+              - entity: input_select.lawn_app_method_humate
+                name: "Humate / Humic Acid"
+                icon: mdi:cup-water
+              - entity: input_select.lawn_app_method_preemergent
+                name: "Pre-emergent"
+                icon: mdi:shield-bug
+              - entity: input_select.lawn_app_method_insecticide
+                name: "Insecticide"
+                icon: mdi:bug-outline
+              - entity: input_select.lawn_app_method_fungicide
+                name: "Fungicide"
+                icon: mdi:mushroom-outline
+              - entity: input_select.lawn_app_method_herbicide
+                name: "Herbicide"
+                icon: mdi:sprout-outline
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+
+      # ── Stack 2: Product Details — Grouped Cards ────────────────────────
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 📝 Product Details
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase;
+                     letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
+                     border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+          - type: markdown
+            title: "🌿 Nutrition"
+            content: |
+              **Kelp / Seaweed**
+              <br>{{ state_attr('sensor.lawn_product_info_kelp', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_kelp') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_kelp', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_kelp', 'notes') | default('', true) | trim }}*
+
+              ---
+
+              **Granular Fertiliser**
+              <br>{{ state_attr('sensor.lawn_product_info_granular_fert', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_granular_fert') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_granular_fert', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_granular_fert', 'notes') | default('', true) | trim }}*
+
+              ---
+
+              **Liquid Fertiliser**
+              <br>{{ state_attr('sensor.lawn_product_info_liquid_fert', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_liquid_fert') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_liquid_fert', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_liquid_fert', 'notes') | default('', true) | trim }}*
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+                p { color: #e8f5eb !important; font-size: 12px !important; line-height: 1.5 !important; }
+
+                strong { color: #8fb89a !important; }
+
+                em { color: #6b9c77 !important; }
+
+                hr { border-color: rgba(74,163,91,0.15) !important; margin: 8px 0 !important; }
+          - type: markdown
+            title: "🏗️ Soil & Growth"
+            content: |
+              **Humate / Humic Acid**
+              <br>{{ state_attr('sensor.lawn_product_info_humate', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_humate') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_humate', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_humate', 'notes') | default('', true) | trim }}*
+
+              ---
+
+              **Soil Wetter**
+              <br>{{ state_attr('sensor.lawn_product_info_soil_wetter', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_soil_wetter') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_soil_wetter', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_soil_wetter', 'notes') | default('', true) | trim }}*
+
+              ---
+
+              **Plant Growth Regulator**
+              <br>{{ state_attr('sensor.lawn_product_info_pgr', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_pgr') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_pgr', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_pgr', 'notes') | default('', true) | trim }}*
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+                p { color: #e8f5eb !important; font-size: 12px !important; line-height: 1.5 !important; }
+
+                strong { color: #8fb89a !important; }
+
+                em { color: #6b9c77 !important; }
+
+                hr { border-color: rgba(74,163,91,0.15) !important; margin: 8px 0 !important; }
+          - type: markdown
+            title: "🛡️ Protection"
+            content: |
+              **Pre-emergent Herbicide**
+              <br>{{ state_attr('sensor.lawn_product_info_preemergent', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_preemergent') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_preemergent', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_preemergent', 'notes') | default('', true) | trim }}*
+
+              ---
+
+              **Insecticide**
+              <br>{{ state_attr('sensor.lawn_product_info_insecticide', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_insecticide') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_insecticide', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_insecticide', 'notes') | default('', true) | trim }}*
+
+              ---
+
+              **Fungicide**
+              <br>{{ state_attr('sensor.lawn_product_info_fungicide', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_fungicide') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_fungicide', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_fungicide', 'notes') | default('', true) | trim }}*
+
+              ---
+
+              **Herbicide**
+              <br>{{ state_attr('sensor.lawn_product_info_herbicide', 'product') | default('–', true) | trim }}
+              <br>{{ states('sensor.lawn_product_info_herbicide') }}
+              <br>*AI:* {{ state_attr('sensor.lawn_product_info_herbicide', 'active_ingredient') | default('–', true) | trim }}
+              <br>*{{ state_attr('sensor.lawn_product_info_herbicide', 'notes') | default('', true) | trim }}*
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+                p { color: #e8f5eb !important; font-size: 12px !important; line-height: 1.5 !important; }
+
+                strong { color: #8fb89a !important; }
+
+                em { color: #6b9c77 !important; }
+
+                hr { border-color: rgba(74,163,91,0.15) !important; margin: 8px 0 !important; }
+
+      # ── Stack 3: Rates & Units ──────────────────────────────────────────
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## ⚖️ Rates & Units
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase;
+                     letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
+                     border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+          - type: entities
+            title: Application Rates (per 100m²)
+            show_header_toggle: false
+            entities:
+              - entity: input_number.lawn_rate_kelp
+                name: "Kelp"
+                icon: mdi:seed
+              - entity: input_number.lawn_rate_granular_fert
+                name: "Granular Fert"
+                icon: mdi:shaker-outline
+              - entity: input_number.lawn_rate_liquid_fert
+                name: "Liquid Fert"
+                icon: mdi:water-circle
+              - entity: input_number.lawn_rate_humate
+                name: "Humate"
+                icon: mdi:cup-water
+              - entity: input_number.lawn_rate_soil_wetter
+                name: "Soil Wetter"
+                icon: mdi:water-percent
+              - entity: input_number.lawn_rate_preemergent
+                name: "Pre-emergent"
+                icon: mdi:shield-bug
+              - entity: input_number.lawn_rate_insecticide
+                name: "Insecticide"
+                icon: mdi:bug-outline
+              - entity: input_number.lawn_rate_fungicide
+                name: "Fungicide"
+                icon: mdi:mushroom-outline
+              - entity: input_number.lawn_rate_herbicide
+                name: "Herbicide"
+                icon: mdi:sprout-outline
+              - entity: input_number.lawn_rate_pgr
+                name: "PGR"
+                icon: mdi:expansion-card-variant
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+          - type: entities
+            title: Product Units
+            show_header_toggle: false
+            entities:
+              - entity: input_select.lawn_unit_kelp
+                name: "Kelp"
+                icon: mdi:seed
+              - entity: input_select.lawn_unit_granular_fert
+                name: "Granular Fert"
+                icon: mdi:shaker-outline
+              - entity: input_select.lawn_unit_liquid_fert
+                name: "Liquid Fert"
+                icon: mdi:water-circle
+              - entity: input_select.lawn_unit_humate
+                name: "Humate"
+                icon: mdi:cup-water
+              - entity: input_select.lawn_unit_soil_wetter
+                name: "Soil Wetter"
+                icon: mdi:water-percent
+              - entity: input_select.lawn_unit_preemergent
+                name: "Pre-emergent"
+                icon: mdi:shield-bug
+              - entity: input_select.lawn_unit_insecticide
+                name: "Insecticide"
+                icon: mdi:bug-outline
+              - entity: input_select.lawn_unit_fungicide
+                name: "Fungicide"
+                icon: mdi:mushroom-outline
+              - entity: input_select.lawn_unit_herbicide
+                name: "Herbicide"
+                icon: mdi:sprout-outline
+              - entity: input_select.lawn_unit_pgr
+                name: "PGR"
+                icon: mdi:expansion-card-variant
+            card_mod:
+              style: >
+                ha-card { background: #1c2b22 !important; border: 1px solid
+                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
+                box-shadow: none !important; }
+
+                .card-header { color: #6fcf80 !important; font-size: 14px !important; font-weight: 600 !important; }
+
+                hui-generic-entity-row { color: #e8f5eb !important; }
+
+      # ── Stack 4: Enabled Products & Custom ──────────────────────────────
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🧪 Enabled Products
+            card_mod:
+              style: >
+                ha-card { background: transparent; box-shadow: none; border:
+                none; }
+
+                h2 { font-size: 13px !important; font-weight: 700 !important;
+                text-transform: uppercase;
+                     letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
+                     border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
           - type: entities
             show_header_toggle: true
             entities:
@@ -1244,31 +1590,19 @@ views:
                 hui-generic-entity-row { color: #e8f5eb !important; }
           - type: markdown
             content: |
-              ### ✏️ Custom Products
-              Select **"Custom"** in any Product Database dropdown above, then fill in the fields below. The name, active ingredient, and notes appear in Product Details. Rate and unit are set in the Application Rates and Product Units cards.
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                h3 { color: #6fcf80 !important; font-weight: 700 !important; }
-
-                p { color: #e8f5eb !important; font-size: 12px !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## ✏️ Custom Product Fields
-              These fields are used when "Custom" is selected in a category. Fill in only the categories you use.
+              ## ✏️ Custom Products
+              Select **"Custom"** in any product dropdown to use your own name, AI, and notes. Rate and unit are set in the Rates & Units cards.
             card_mod:
               style: >
                 ha-card { background: transparent; box-shadow: none; border:
                 none; }
 
                 h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
+                text-transform: uppercase;
+                     letter-spacing: 0.14em !important; color: #4aa35b !important; margin: 0 0 12px 0 !important;
+                     border-bottom: 1px solid rgba(74,163,91,0.2); padding-bottom: 8px; }
+
+                p { color: #8fb89a !important; font-size: 12px !important; }
           - type: conditional
             conditions:
               - condition: state
@@ -1290,6 +1624,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1312,6 +1647,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1334,6 +1670,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1356,6 +1693,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1378,6 +1716,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1400,6 +1739,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1422,6 +1762,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1444,6 +1785,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1466,6 +1808,7 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: conditional
             conditions:
@@ -1488,15 +1831,14 @@ views:
                   ha-card { background: #1c2b22 !important; border: 1px solid
                   rgba(74,163,91,0.18) !important; border-radius: 14px !important;
                   box-shadow: none !important; }
+                  .card-header { color: #6fcf80 !important; font-size: 14px !important; }
                   hui-generic-entity-row { color: #e8f5eb !important; }
           - type: markdown
             content: |
-              ### ➕ Adding More Built-in Products
-              To add a product to the built-in database, edit **lawn_care.yaml** in two places:
-              1. **input_select.lawn_product_db_&lt;category&gt;** — add the product name to `options:` (before "Custom")
-              2. **sensor.lawn_db_&lt;category&gt;** — add the entry to the `products` attribute dict
-
-              See README for the full field reference.
+              ### ➕ Adding Built-in Products
+              Edit **lawn_care.yaml** in two places:
+              1. **input_select.lawn_product_db_&lt;category&gt;** — add to `options:` (before "Custom")
+              2. **sensor.lawn_db_&lt;category&gt;** — add to the `products` attribute dict
             card_mod:
               style: >
                 ha-card { background: #1c2b22 !important; border: 1px solid
@@ -1505,201 +1847,7 @@ views:
 
                 h3 { color: #6fcf80 !important; font-weight: 700 !important; }
 
-                p, li, code { color: #e8f5eb !important; font-size: 12px !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## ⚖️ Product Units
-              Set each product's measurement unit. This controls the rate (/100m²), stock level, and logbook display.
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: input_select.lawn_unit_kelp
-                name: "Kelp"
-              - entity: input_select.lawn_unit_granular_fert
-                name: "Granular Fert"
-              - entity: input_select.lawn_unit_liquid_fert
-                name: "Liquid Fert"
-              - entity: input_select.lawn_unit_humate
-                name: "Humate"
-              - entity: input_select.lawn_unit_soil_wetter
-                name: "Soil Wetter"
-              - entity: input_select.lawn_unit_preemergent
-                name: "Pre-emergent"
-              - entity: input_select.lawn_unit_insecticide
-                name: "Insecticide"
-              - entity: input_select.lawn_unit_fungicide
-                name: "Fungicide"
-              - entity: input_select.lawn_unit_herbicide
-                name: "Herbicide"
-              - entity: input_select.lawn_unit_pgr
-                name: "PGR"
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## 📋 Product Database
-              Select a commercial product per category. Rate, unit, and N-fraction auto-fill when you change the selection. Choose "Custom" to set your own values.
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            title: Selected Products
-            show_header_toggle: false
-            entities:
-              - entity: input_select.lawn_product_db_kelp
-                name: "Kelp / Seaweed" 
-              - entity: input_select.lawn_product_db_granular_fert
-                name: "Granular Fertiliser" 
-              - entity: input_select.lawn_product_db_liquid_fert
-                name: "Liquid Fertiliser" 
-              - entity: input_select.lawn_product_db_humate
-                name: "Humate / Humic Acid" 
-              - entity: input_select.lawn_product_db_soil_wetter
-                name: "Soil Wetter" 
-              - entity: input_select.lawn_product_db_preemergent
-                name: "Pre-emergent Herbicide" 
-              - entity: input_select.lawn_product_db_insecticide
-                name: "Insecticide" 
-              - entity: input_select.lawn_product_db_fungicide
-                name: "Fungicide" 
-              - entity: input_select.lawn_product_db_herbicide
-                name: "Herbicide" 
-              - entity: input_select.lawn_product_db_pgr
-                name: "Plant Growth Regulator" 
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-          - type: entities
-            title: Application Method
-            show_header_toggle: false
-            entities:
-              - entity: input_select.lawn_app_method_kelp
-                name: "Kelp / Seaweed" 
-              - entity: input_select.lawn_app_method_liquid_fert
-                name: "Liquid Fertiliser" 
-              - entity: input_select.lawn_app_method_humate
-                name: "Humate / Humic Acid" 
-              - entity: input_select.lawn_app_method_preemergent
-                name: "Pre-emergent Herbicide" 
-              - entity: input_select.lawn_app_method_insecticide
-                name: "Insecticide" 
-              - entity: input_select.lawn_app_method_fungicide
-                name: "Fungicide" 
-              - entity: input_select.lawn_app_method_herbicide
-                name: "Herbicide" 
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
-          - type: markdown
-            content: |
-              ### 📝 Product Details
-
-              **Kelp / Seaweed**: {{ states('sensor.lawn_product_info_kelp') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_kelp', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_kelp', 'notes') | default('') | trim }}
-
-              **Granular Fertiliser**: {{ states('sensor.lawn_product_info_granular_fert') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_granular_fert', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_granular_fert', 'notes') | default('') | trim }}
-
-              **Liquid Fertiliser**: {{ states('sensor.lawn_product_info_liquid_fert') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_liquid_fert', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_liquid_fert', 'notes') | default('') | trim }}
-
-              **Humate / Humic Acid**: {{ states('sensor.lawn_product_info_humate') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_humate', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_humate', 'notes') | default('') | trim }}
-
-              **Soil Wetter**: {{ states('sensor.lawn_product_info_soil_wetter') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_soil_wetter', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_soil_wetter', 'notes') | default('') | trim }}
-
-              **Pre-emergent Herbicide**: {{ states('sensor.lawn_product_info_preemergent') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_preemergent', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_preemergent', 'notes') | default('') | trim }}
-
-              **Insecticide**: {{ states('sensor.lawn_product_info_insecticide') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_insecticide', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_insecticide', 'notes') | default('') | trim }}
-
-              **Fungicide**: {{ states('sensor.lawn_product_info_fungicide') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_fungicide', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_fungicide', 'notes') | default('') | trim }}
-
-              **Herbicide**: {{ states('sensor.lawn_product_info_herbicide') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_herbicide', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_herbicide', 'notes') | default('') | trim }}
-
-              **Plant Growth Regulator**: {{ states('sensor.lawn_product_info_pgr') }}
-              <br>*AI:* {{ state_attr('sensor.lawn_product_info_pgr', 'active_ingredient') | default('-') | trim }} · *Notes:* {{ state_attr('sensor.lawn_product_info_pgr', 'notes') | default('') | trim }}
-              
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                h3 { color: #6fcf80 !important; font-weight: 700 !important; }
-
-                p { color: #e8f5eb !important; font-size: 12px !important; line-height: 1.6 !important; }
-
-                strong { color: #8fb89a !important; }
-
-      - type: vertical-stack
-        cards:
-          - type: markdown
-            content: |
-              ## 💧 Application Rates
-              Rate per 100m² — unit set in Product Units above
-            card_mod:
-              style: >
-                ha-card { background: transparent; box-shadow: none; border:
-                none; }
-
-                h2 { font-size: 13px !important; font-weight: 700 !important;
-                text-transform: uppercase; color: #4aa35b !important; margin: 0
-                0 8px 0 !important; }
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: input_number.lawn_rate_granular_fert
-              - entity: input_number.lawn_rate_liquid_fert
-              - entity: input_number.lawn_rate_kelp
-              - entity: input_number.lawn_rate_humate
-              - entity: input_number.lawn_rate_soil_wetter
-              - entity: input_number.lawn_rate_preemergent
-              - entity: input_number.lawn_rate_insecticide
-              - entity: input_number.lawn_rate_fungicide
-              - entity: input_number.lawn_rate_herbicide
-              - entity: input_number.lawn_rate_pgr
-            card_mod:
-              style: >
-                ha-card { background: #1c2b22 !important; border: 1px solid
-                rgba(74,163,91,0.18) !important; border-radius: 14px !important;
-                box-shadow: none !important; }
-
-                hui-generic-entity-row { color: #e8f5eb !important; }
+                p, li, code { color: #8fb89a !important; font-size: 12px !important; }
 
   - title: Season Review
     path: season
