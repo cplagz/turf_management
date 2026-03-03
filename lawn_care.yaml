@@ -1,6 +1,15 @@
 # =============================================================================
-# Perth Turf Management System v3.8.0 — Home Assistant Package
+# Perth Turf Management System v3.8.1 — Home Assistant Package
 # Save as: config/packages/lawn_care.yaml
+#
+# v3.8.1:
+# ✓ FIX: Microclimate & GDD Tracking mini-graph-card not loading.
+#   Root cause: input_number entities are not recorded by HA's history/recorder
+#   by default, so mini-graph-card had no historical data to plot for Max/Min
+#   temp lines, causing the entire card to error out.
+#   Fix: Added two template sensors (sensor.lawn_temp_daily_max /
+#   sensor.lawn_temp_daily_min) that mirror the input_numbers. Template sensors
+#   ARE recorded automatically. Dashboard updated to reference them.
 #
 # v3.8.0:
 # ✓ Dashboard View 3 (Products) redesigned — 4 logical stacks:
@@ -1221,9 +1230,27 @@ template:
   # ── Standard Template Sensors ──────────────────────────────────────────
   - sensor:
 
-      # NOTE: The wrapper sensors for daily max/min temp from v2.1 have been
-      # removed. The input_numbers now have device_class/state_class via
-      # customize: — reference input_number.lawn_temp_daily_max directly.
+      # ── Daily Max/Min Temperature Wrapper Sensors ──────────────────────
+      # These mirror input_number.lawn_temp_daily_max/min so that
+      # mini-graph-card (and any other history-based card) has recorded
+      # data to plot. input_number entities are NOT recorded by default;
+      # template sensors ARE. (Re-introduced in v3.8.1.)
+
+      - name: "Lawn Temp Daily Max"
+        unique_id: lawn_temp_daily_max
+        state: "{{ states('input_number.lawn_temp_daily_max') | float(0) | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:thermometer-chevron-up
+
+      - name: "Lawn Temp Daily Min"
+        unique_id: lawn_temp_daily_min
+        state: "{{ states('input_number.lawn_temp_daily_min') | float(0) | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        icon: mdi:thermometer-chevron-down
 
       - name: "Lawn GDD Today"
         unique_id: lawn_gdd_today

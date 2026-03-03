@@ -105,11 +105,11 @@ views:
               - entity: sensor.weatherflow_sensors_temperature
                 name: Current
                 color: '#4aa35b'
-              - entity: input_number.lawn_temp_daily_max
+              - entity: sensor.lawn_temp_daily_max
                 name: Max
                 show_state: true
                 color: '#e07843'
-              - entity: input_number.lawn_temp_daily_min
+              - entity: sensor.lawn_temp_daily_min
                 name: Min
                 show_state: true
                 color: '#4da6d4'
